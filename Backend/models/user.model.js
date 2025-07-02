@@ -1,12 +1,22 @@
 import mongoose from "mongoose";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 const userSchema = new mongoose.Schema(
   {
-    name: {
-      type: String,
-      required: [true, "Name is required"],
-      trim: true,
-      minlength: [2, "Name must be at least 2 characters long"],
+    fullName: {
+      firstName: {
+        type: String,
+        required: [true, "First name is required"],
+        trim: true,
+        minlength: [2, "First name must be at least 2 characters long"],
+      },
+      lastName: {
+        type: String,
+        required: [true, "Last name is required"],
+        trim: true,
+        minlength: [2, "Last name must be at least 2 characters long"],
+      },
     },
     email: {
       type: String,
@@ -22,8 +32,12 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: [true, "Password is required"],
-      minlength: [6, "Password must be at least 6 characters long"],
       select: false, // Hide password by default in queries
+    },
+    socketId: {
+      type: String,
+      unique: true, // Ensure socketId is unique
+      sparse: true, // Allows for null values without affecting uniqueness
     },
   },
   {
@@ -33,6 +47,24 @@ const userSchema = new mongoose.Schema(
 
 // Create index for faster email queries
 userSchema.index({ email: 1 });
+
+userSchema.methods.generateAuthToken = function () {
+  const user = this;
+  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
+  return token;
+};
+
+userSchema.methods.comparePassword = async function (password) {
+  const user = this;
+  const isMatch = await bcrypt.compare(password, user.password);
+  return isMatch;
+};
+
+userSchema.static.hashPassword = async function (password) {
+  const salt = await bcrypt.genSalt(10); // Generate a salt with 10 rounds
+  const hashedPassword = await bcrypt.hash(password, salt); // Hash the password with the generated salt
+  return hashedPassword;
+};
 
 const User = mongoose.model("User", userSchema);
 
