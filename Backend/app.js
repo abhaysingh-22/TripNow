@@ -4,6 +4,7 @@ import express from 'express';
 import cors from 'cors';
 const app = express();
 import connectToDB from './db/db.js';
+import userRoutes from './routes/user.routes.js';
 
 // Connect to database (non-blocking)
 connectToDB().catch(err => {
@@ -14,6 +15,9 @@ app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true
 }));
+
+app.use(express.json());
+app.use('/api/users', userRoutes);
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
