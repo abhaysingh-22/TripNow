@@ -1,7 +1,6 @@
-import express from "express";
 import { Router } from "express";
 import { body } from "express-validator"; // Importing express-validator for request validation it helps in validating the request body for user registration and login
-import userController from "../controllers/user.controller"; 
+import registerUser from "../controllers/user.controller.js"; 
 
 const router = Router();
 
@@ -15,7 +14,7 @@ router.post(
       .isLength({ min: 6 })
       .withMessage("Password must be at least 6 characters long"),
   ],
-  userController.registerUser
+  registerUser
 );
 
 export default router;
