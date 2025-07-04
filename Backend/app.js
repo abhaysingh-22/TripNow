@@ -17,6 +17,8 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));   // urlencoded is used to parse form data this is basically a middleware
+
 app.use('/api/users', userRoutes);
 
 app.get('/', (req, res) => {
