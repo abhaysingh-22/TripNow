@@ -3,6 +3,7 @@ dotenv.config();
 import express from 'express';
 import cors from 'cors';
 const app = express();
+import cookieParser from 'cookie-parser';
 import connectToDB from './db/db.js';
 import userRoutes from './routes/user.routes.js';
 
@@ -18,6 +19,7 @@ app.use(cors({
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));   // urlencoded is used to parse form data this is basically a middleware
+app.use(cookieParser()); // Middleware to parse cookies
 
 app.use('/api/users', userRoutes);
 

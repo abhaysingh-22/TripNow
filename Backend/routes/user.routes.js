@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { body } from "express-validator"; // Importing express-validator for request validation it helps in validating the request body for user registration and login
-import {registerUser, loginUser} from "../controllers/user.controller.js";
-// import loginUser from "../controllers/user.controller.js";
+import {registerUser, loginUser, getUserProfile, logoutUser} from "../controllers/user.controller.js";
+import authUser from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
@@ -28,5 +28,9 @@ router.post(
   ],
   loginUser
 );
+
+router.get('/profile', authUser, getUserProfile);
+
+router.get('/logout', authUser, logoutUser);
 
 export default router;
