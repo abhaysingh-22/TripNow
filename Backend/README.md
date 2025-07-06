@@ -113,6 +113,88 @@ Content-Type: application/json
 }
 ```
 
+#### POST /api/users/login
+Authenticate an existing user.
+
+**Description:** Authenticates a user with email and password. Returns user data and authentication token.
+
+**Request URL:** `POST http://localhost:4000/api/users/login`
+
+**Request Headers:**
+```
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "email": "john.doe@example.com",
+  "password": "securepassword123"
+}
+```
+
+**Request Body Validation:**
+- `email`: Required, valid email format
+- `password`: Required, minimum 6 characters
+
+**Response Status Codes:**
+
+| Status Code | Description |
+|-------------|-------------|
+| 200 | Login successful |
+| 400 | Bad request - Validation errors |
+| 401 | Unauthorized - Invalid credentials |
+| 500 | Internal server error |
+
+**Success Response (200):**
+```json
+{
+  "user": {
+    "_id": "64f8b1c2d4e5f6a7b8c9d0e1",
+    "fullName": {
+      "firstName": "John",
+      "lastName": "Doe"
+    },
+    "email": "john.doe@example.com",
+    "createdAt": "2023-09-07T10:30:00.000Z",
+    "updatedAt": "2023-09-07T10:30:00.000Z"
+  },
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**Error Response (400 - Validation):**
+```json
+{
+  "errors": [
+    {
+      "msg": "Valid email is required",
+      "param": "email",
+      "location": "body"
+    },
+    {
+      "msg": "Password must be at least 6 characters long",
+      "param": "password",
+      "location": "body"
+    }
+  ]
+}
+```
+
+**Error Response (401 - Invalid Credentials):**
+```json
+{
+  "error": "Invalid email or password"
+}
+```
+
+**Error Response (500):**
+```json
+{
+  "error": "Failed to generate auth token"
+}
+```
+
 ## Data Models
 
 ### User Model
@@ -141,19 +223,28 @@ Content-Type: application/json
 
 ## Testing with Postman
 
+### Register User
 1. Set method to `POST`
 2. Set URL to `http://localhost:4000/api/users/register`
 3. Set header: `Content-Type: application/json`
-4. Set body to raw JSON with the required fields
+4. Set body to raw JSON with fullName, email, and password
+5. Send the request
+
+### Login User
+1. Set method to `POST`
+2. Set URL to `http://localhost:4000/api/users/login`
+3. Set header: `Content-Type: application/json`
+4. Set body to raw JSON with email and password
 5. Send the request
 
 ## Security Features
 
 - Password hashing with bcrypt
-- JWT token authentication
+- JWT token authentication (expires in 24 hours)
 - Input validation with express-validator
 - CORS configuration
 - Password field excluded from queries by default
+- Secure password comparison with bcrypt
 
 ## Error Handling
 
@@ -161,3 +252,4 @@ The API uses consistent error response format:
 - Validation errors return array of error objects
 - Business logic errors return single error message
 - All errors include appropriate HTTP status codes
+- Authentication errors use 401 status code
