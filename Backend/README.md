@@ -195,6 +195,118 @@ Content-Type: application/json
 }
 ```
 
+#### GET /api/users/profile
+Get authenticated user's profile information.
+
+**Description:** Retrieves the current user's profile data. Requires authentication token.
+
+**Request URL:** `GET http://localhost:4000/api/users/profile`
+
+**Request Headers:**
+```
+Content-Type: application/json
+Authorization: Bearer <token>
+```
+**OR**
+```
+Cookie: token=<token>
+```
+
+**Authentication:** Required (JWT token via Authorization header or cookie)
+
+**Response Status Codes:**
+
+| Status Code | Description |
+|-------------|-------------|
+| 200 | Profile retrieved successfully |
+| 401 | Unauthorized - Invalid or missing token |
+| 404 | User not found |
+| 500 | Internal server error |
+
+**Success Response (200):**
+```json
+{
+  "user": {
+    "_id": "64f8b1c2d4e5f6a7b8c9d0e1",
+    "fullName": {
+      "firstName": "John",
+      "lastName": "Doe"
+    },
+    "email": "john.doe@example.com"
+  },
+  "message": "User profile retrieved successfully"
+}
+```
+
+**Error Response (401 - Unauthorized):**
+```json
+{
+  "error": "Authentication token is required"
+}
+```
+
+**Error Response (401 - Blacklisted Token):**
+```json
+{
+  "error": "Token is blacklisted, please log in again"
+}
+```
+
+**Error Response (404 - User Not Found):**
+```json
+{
+  "error": "User not found"
+}
+```
+
+#### GET /api/users/logout
+Logout the authenticated user.
+
+**Description:** Logs out the current user by clearing the authentication cookie and blacklisting the token.
+
+**Request URL:** `GET http://localhost:4000/api/users/logout`
+
+**Request Headers:**
+```
+Content-Type: application/json
+Authorization: Bearer <token>
+```
+**OR**
+```
+Cookie: token=<token>
+```
+
+**Authentication:** Required (JWT token via Authorization header or cookie)
+
+**Response Status Codes:**
+
+| Status Code | Description |
+|-------------|-------------|
+| 200 | Logout successful |
+| 401 | Unauthorized - Invalid or missing token |
+| 500 | Internal server error |
+
+**Success Response (200):**
+```json
+{
+  "message": "Logged out successfully"
+}
+```
+
+**Error Response (401 - Unauthorized):**
+```json
+{
+  "error": "Authentication token is required"
+}
+```
+
+**Error Response (500):**
+```json
+{
+  "error": "Internal server error"
+}
+```
+
 ## Data Models
 
 ### User Model
@@ -237,14 +349,28 @@ Content-Type: application/json
 4. Set body to raw JSON with email and password
 5. Send the request
 
+### Get User Profile
+1. Set method to `GET`
+2. Set URL to `http://localhost:4000/api/users/profile`
+3. Set header: `Authorization: Bearer <token>` (copy token from login response)
+4. Send the request
+
+### Logout User
+1. Set method to `GET`
+2. Set URL to `http://localhost:4000/api/users/logout`
+3. Set header: `Authorization: Bearer <token>`
+4. Send the request
+
 ## Security Features
 
 - Password hashing with bcrypt
 - JWT token authentication (expires in 24 hours)
+- Token blacklisting for secure logout
 - Input validation with express-validator
-- CORS configuration
+- CORS configuration with credentials support
 - Password field excluded from queries by default
 - Secure password comparison with bcrypt
+- Cookie-based authentication with httpOnly flag
 
 ## Error Handling
 
