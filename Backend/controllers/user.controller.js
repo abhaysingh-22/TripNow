@@ -39,4 +39,33 @@ const registerUser = async (req, res) => {
   }
 };
 
-export default registerUser;
+const loginUser = async(req, res) => {
+
+  const errors = validationResult(req);
+  if(!errors.isEmpty()){
+    return res.status(400).json({errors: errors.array()});
+  }
+
+  const { email, password} = req.body;
+
+  const user = await User.findOne({email}).select("+password");  // this is because password is not selected by default in the user model and this implies that whenever we query the user model(email), bring the password field as well
+
+  if(!user){
+    return res.status(401).json({error: "Invalid email or password"});
+  }
+
+  const isMatch = await user.comparePassword(password);
+
+  if(!isMatch){
+    return res.status(401).json({error: "Invalid email or password"});
+  }
+
+  const token = user.generateAuthToken();
+  if(!token){
+    return res.status(500).json({error: "Failed to generate auth token"});
+  }
+
+   res.status(200).json({user, token});
+}
+
+export { registerUser, loginUser };
