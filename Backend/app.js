@@ -6,6 +6,7 @@ const app = express();
 import cookieParser from 'cookie-parser';
 import connectToDB from './db/db.js';
 import userRoutes from './routes/user.routes.js';
+import captainRoutes from './routes/captain.routes.js';
 
 // Connect to database (non-blocking)
 connectToDB().catch(err => {
@@ -22,6 +23,7 @@ app.use(express.urlencoded({ extended: true }));   // urlencoded is used to pars
 app.use(cookieParser()); // Middleware to parse cookies
 
 app.use('/api/users', userRoutes);
+app.use('/api/captains', captainRoutes);
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
