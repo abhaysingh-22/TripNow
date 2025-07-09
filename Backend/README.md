@@ -396,6 +396,210 @@ Content-Type: application/json
 }
 ```
 
+#### POST /api/captains/login
+Authenticate an existing captain.
+
+**Description:** Authenticates a captain with email and password. Returns success message and authentication token.
+
+**Request URL:** `POST http://localhost:4000/api/captains/login`
+
+**Request Headers:**
+```
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "email": "captain@example.com",
+  "password": "securepassword123"
+}
+```
+
+**Request Body Validation:**
+- `email`: Required, valid email format
+- `password`: Required, minimum 6 characters
+
+**Response Status Codes:**
+
+| Status Code | Description |
+|-------------|-------------|
+| 200 | Login successful |
+| 400 | Bad request - Validation errors or invalid credentials |
+| 500 | Internal server error |
+
+**Success Response (200):**
+```json
+{
+  "message": "Captain logged in successfully",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**Error Response (400 - Validation):**
+```json
+{
+  "errors": [
+    {
+      "msg": "Invalid email address",
+      "param": "email",
+      "location": "body"
+    },
+    {
+      "msg": "Password must be at least 6 characters long",
+      "param": "password",
+      "location": "body"
+    }
+  ]
+}
+```
+
+**Error Response (400 - Invalid Credentials):**
+```json
+{
+  "message": "Invalid email or password"
+}
+```
+
+**Error Response (500):**
+```json
+{
+  "message": "Internal server error"
+}
+```
+
+#### GET /api/captains/profile
+Get authenticated captain's profile information.
+
+**Description:** Retrieves the current captain's profile data including vehicle information. Requires authentication token.
+
+**Request URL:** `GET http://localhost:4000/api/captains/profile`
+
+**Request Headers:**
+```
+Content-Type: application/json
+Authorization: Bearer <token>
+```
+**OR**
+```
+Cookie: token=<token>
+```
+
+**Authentication:** Required (JWT token via Authorization header or cookie)
+
+**Response Status Codes:**
+
+| Status Code | Description |
+|-------------|-------------|
+| 200 | Profile retrieved successfully |
+| 401 | Unauthorized - Invalid or missing token |
+| 404 | Captain not found |
+| 500 | Internal server error |
+
+**Success Response (200):**
+```json
+{
+  "message": "Captain profile fetched successfully",
+  "captain": {
+    "_id": "64f8b1c2d4e5f6a7b8c9d0e1",
+    "fullName": {
+      "firstName": "John",
+      "lastName": "Smith"
+    },
+    "email": "captain@example.com",
+    "status": "active",
+    "vehicle": {
+      "color": "red",
+      "numberPlate": "UP32BF7655",
+      "capacity": 4,
+      "typeofVehicle": "car"
+    },
+    "location": {
+      "latitude": null,
+      "longitude": null
+    },
+    "createdAt": "2023-09-07T10:30:00.000Z",
+    "updatedAt": "2023-09-07T10:30:00.000Z"
+  }
+}
+```
+
+**Error Response (401 - Unauthorized):**
+```json
+{
+  "error": "Authentication token is required"
+}
+```
+
+**Error Response (401 - Blacklisted Token):**
+```json
+{
+  "error": "Token is blacklisted, please log in again"
+}
+```
+
+**Error Response (404 - Captain Not Found):**
+```json
+{
+  "error": "Captain not found"
+}
+```
+
+**Error Response (500):**
+```json
+{
+  "message": "Internal server error"
+}
+```
+
+#### GET /api/captains/logout
+Logout the authenticated captain.
+
+**Description:** Logs out the current captain by clearing the authentication cookie and blacklisting the token.
+
+**Request URL:** `GET http://localhost:4000/api/captains/logout`
+
+**Request Headers:**
+```
+Content-Type: application/json
+Authorization: Bearer <token>
+```
+**OR**
+```
+Cookie: token=<token>
+```
+
+**Authentication:** Required (JWT token via Authorization header or cookie)
+
+**Response Status Codes:**
+
+| Status Code | Description |
+|-------------|-------------|
+| 200 | Logout successful |
+| 401 | Unauthorized - Invalid or missing token |
+| 500 | Internal server error |
+
+**Success Response (200):**
+```json
+{
+  "message": "Captain logged out successfully"
+}
+```
+
+**Error Response (401 - Unauthorized):**
+```json
+{
+  "message": "Authentication token is required"
+}
+```
+
+**Error Response (500):**
+```json
+{
+  "message": "Internal server error"
+}
+```
+
 ## Data Models
 
 ### User Model
@@ -483,16 +687,36 @@ Content-Type: application/json
 4. Set body to raw JSON with fullName, email, password, and vehicle details
 5. Send the request
 
+### Login Captain
+1. Set method to `POST`
+2. Set URL to `http://localhost:4000/api/captains/login`
+3. Set header: `Content-Type: application/json`
+4. Set body to raw JSON with email and password
+5. Send the request
+
+### Get Captain Profile
+1. Set method to `GET`
+2. Set URL to `http://localhost:4000/api/captains/profile`
+3. Set header: `Authorization: Bearer <token>` (copy token from login response)
+4. Send the request
+
+### Logout Captain
+1. Set method to `GET`
+2. Set URL to `http://localhost:4000/api/captains/logout`
+3. Set header: `Authorization: Bearer <token>`
+4. Send the request
+
 ## Security Features
 
-- Password hashing with bcrypt
-- JWT token authentication (expires in 24 hours)
+- Password hashing with bcrypt (10 rounds)
+- JWT token authentication (1 hour for captains, 24 hours for users)
 - Token blacklisting for secure logout
 - Input validation with express-validator
 - CORS configuration with credentials support
 - Password field excluded from queries by default
 - Secure password comparison with bcrypt
 - Cookie-based authentication with httpOnly flag
+- Separate authentication middleware for users and captains
 
 ## Error Handling
 
