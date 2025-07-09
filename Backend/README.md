@@ -307,6 +307,95 @@ Cookie: token=<token>
 }
 ```
 
+### Captain Management
+
+#### POST /api/captains/register
+Register a new captain account.
+
+**Description:** Creates a new captain account with personal details and vehicle information. Returns success message and authentication token.
+
+**Request URL:** `POST http://localhost:4000/api/captains/register`
+
+**Request Headers:**
+```
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "fullName": {
+    "firstName": "John",
+    "lastName": "Smith"
+  },
+  "email": "captain@example.com",
+  "password": "securepassword123",
+  "vehicle": {
+    "color": "red",
+    "numberPlate": "UP32BF7655",
+    "capacity": "4",
+    "typeofVehicle": "car"
+  }
+}
+```
+
+**Request Body Validation:**
+- `fullName.firstName`: Required, non-empty string
+- `email`: Required, valid email format
+- `password`: Required, minimum 6 characters
+- `vehicle.color`: Required, non-empty string
+- `vehicle.numberPlate`: Required, non-empty string
+- `vehicle.capacity`: Required, numeric value
+- `vehicle.typeofVehicle`: Required, must be one of: "car", "bike", "truck"
+
+**Response Status Codes:**
+
+| Status Code | Description |
+|-------------|-------------|
+| 201 | Captain registered successfully |
+| 400 | Bad request - Validation errors or captain already exists |
+| 500 | Internal server error |
+
+**Success Response (201):**
+```json
+{
+  "message": "Captain registered successfully",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**Error Response (400 - Validation):**
+```json
+{
+  "errors": [
+    {
+      "msg": "First name is required",
+      "param": "fullName.firstName",
+      "location": "body"
+    },
+    {
+      "msg": "Vehicle type is required",
+      "param": "vehicle.typeofVehicle",
+      "location": "body"
+    }
+  ]
+}
+```
+
+**Error Response (400 - Captain Exists):**
+```json
+{
+  "message": "Captain already exists"
+}
+```
+
+**Error Response (500):**
+```json
+{
+  "message": "Internal server error"
+}
+```
+
 ## Data Models
 
 ### User Model
@@ -319,6 +408,32 @@ Cookie: token=<token>
   email: String (required, unique, min: 5 chars),
   password: String (required, hashed),
   socketId: String (optional),
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+### Captain Model
+```javascript
+{
+  fullName: {
+    firstName: String (required),
+    lastName: String (optional)
+  },
+  email: String (required, unique, valid email),
+  password: String (required, hashed),
+  socketId: String (optional),
+  status: String (enum: "active", "inactive", "banned", default: "active"),
+  vehicle: {
+    color: String (required),
+    numberPlate: String (required, unique),
+    capacity: Number (required),
+    typeofVehicle: String (required, enum: "car", "bike", "truck")
+  },
+  location: {
+    latitude: Number (optional),
+    longitude: Number (optional)
+  },
   createdAt: Date,
   updatedAt: Date
 }
@@ -360,6 +475,13 @@ Cookie: token=<token>
 2. Set URL to `http://localhost:4000/api/users/logout`
 3. Set header: `Authorization: Bearer <token>`
 4. Send the request
+
+### Register Captain
+1. Set method to `POST`
+2. Set URL to `http://localhost:4000/api/captains/register`
+3. Set header: `Content-Type: application/json`
+4. Set body to raw JSON with fullName, email, password, and vehicle details
+5. Send the request
 
 ## Security Features
 
