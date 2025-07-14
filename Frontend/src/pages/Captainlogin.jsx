@@ -1,13 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
 function CaptainLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(
+    localStorage.getItem("darkMode") === "true"
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
   const [captain, setCaptain] = useState({});
+
+  useEffect(() => {
+    localStorage.setItem("darkMode", isDarkMode);
+  }, [isDarkMode]);
 
   const submitHandler = async (e) => {
     e.preventDefault();
