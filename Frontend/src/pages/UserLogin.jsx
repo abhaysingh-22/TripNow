@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect, useContext } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { UserContext } from "../context/UserContext.jsx";
+import axios from "axios";
 
 function UserLogin() {
   const [email, setEmail] = useState("");
@@ -10,6 +12,10 @@ function UserLogin() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
   const [userData, setUserData] = useState({});
+
+  const navigate = useNavigate();
+
+  const { user, setUser } = useContext(UserContext);
 
   useEffect(() => {
     localStorage.setItem("darkMode", isDarkMode);
@@ -24,16 +30,36 @@ function UserLogin() {
       password,
     };
 
-    setEmail("");
-    setPassword("");
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BASE_URL}/api/users/login`,
+        userData
+      );
 
-    // Simulate API call
-    setTimeout(() => {
-      setUserData(userData);
-      setShowPopup(true);
+      if (response.status === 200) {
+        const data = response.data;
+        setUser({
+          email: data.user.email,
+          fullName: {
+            firstName: data.user.fullName.firstName,
+            lastName: data.user.fullName.lastName,
+          },
+        });
+        localStorage.setItem("token", data.token);
+        setShowPopup(true);
+        setEmail("");
+        setPassword("");
+        setTimeout(() => {
+          setShowPopup(false);
+          navigate("/home");
+        }, 1500);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("Login failed. Please check your credentials.");
+    } finally {
       setIsLoading(false);
-      setTimeout(() => setShowPopup(false), 3000);
-    }, 1000);
+    }
   };
 
   return (
