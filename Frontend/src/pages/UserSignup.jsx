@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect, useContext } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
+import { UserContext } from "../context/UserContext.jsx";
 
 const UserSignup = () => {
   const [email, setEmail] = useState("");
@@ -13,6 +15,10 @@ const UserSignup = () => {
   );
   const [showPopup, setShowPopup] = useState(false);
 
+  const navigate = useNavigate();
+
+  const { user, setUser } = useContext(UserContext);
+
   useEffect(() => {
     localStorage.setItem("darkMode", isDarkMode);
   }, [isDarkMode]);
@@ -20,25 +26,71 @@ const UserSignup = () => {
   const submitHandler = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    
+    // Add validation
+    if (!firstName.trim() || !lastName.trim()) {
+      alert('Please enter both first and last name');
+      setIsLoading(false);
+      return;
+    }
+
+    // This structure matches your backend controller
     const newUser = {
-      fullname: {
-        firstname: firstName,
-        lastname: lastName,
+      fullName: {
+        firstName: firstName,
+        lastName: lastName,
       },
       email: email,
       password: password,
     };
 
-    // Simulate API call
-    setTimeout(() => {
-      setShowPopup(true);
+    // Log the data being sent to debug
+    console.log('Sending data:', newUser);
+    console.log('API URL:', `${import.meta.env.VITE_BASE_URL}/api/users/register`);
+
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/api/users/register`, newUser);
+      if (response.status === 201) {
+        const data = response.data;
+        setUser(data.user);
+        localStorage.setItem('token', data.token);
+        setShowPopup(true);
+        setEmail("");
+        setFirstName("");
+        setLastName("");
+        setPassword("");
+        setTimeout(() => {
+          setShowPopup(false);
+          navigate("/home");
+        }, 1500);
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      console.error('Base URL:', import.meta.env.VITE_BASE_URL);
+      
+      let errorMessage = 'Registration failed. Please try again.';
+      
+      if (error.response?.status === 400) {
+        // Handle validation errors
+        if (error.response.data?.errors) {
+          // If backend sends validation errors array
+          errorMessage = error.response.data.errors.map(err => err.msg).join(', ');
+        } else if (error.response.data?.message) {
+          // If backend sends a message
+          errorMessage = error.response.data.message;
+        } else {
+          errorMessage = 'Invalid data provided. Please check your inputs.';
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      alert(errorMessage);
+    } finally {
       setIsLoading(false);
-      setEmail("");
-      setFirstName("");
-      setLastName("");
-      setPassword("");
-      setTimeout(() => setShowPopup(false), 3000);
-    }, 1000);
+    }
   };
 
   return (
