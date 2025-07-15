@@ -8,12 +8,14 @@ import UserLogout from "./pages/UserLogout";
 import Captainlogin from "./pages/Captainlogin";
 import CaptainLogout from "./pages/CaptainLogout";
 import CaptainSignup from "./pages/CaptainSignup";
+import Start from "./pages/Start";
 
 function App() {
   return (
     <>
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<Start />} />
+        <Route path="/home" element={<Home />} />
         <Route path="/login" element={<UserLogin />} />
         <Route path="/signup" element={<UserSignup />} />
         <Route path="/logout" element={<UserLogout />} />
