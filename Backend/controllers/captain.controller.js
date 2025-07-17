@@ -35,6 +35,15 @@ const registerCaptain = async (req, res) => {
     const token = captain.generateAuthToken();
     res.status(201).json({
       message: "Captain registered successfully",
+      captain: {
+        _id: captain._id,
+        fullName: {
+          firstName: captain.fullName.firstName,
+          lastName: captain.fullName.lastName,
+        },
+        email: captain.email,
+        vehicle: captain.vehicle,
+      },
       token,
     });
   } catch (error) {
@@ -44,26 +53,25 @@ const registerCaptain = async (req, res) => {
 };
 
 const loginCaptain = async (req, res) => {
-
   const errors = validationResult(req);
 
-  if(!errors.isEmpty()){
-    return res.status(400).json({errors: errors.array()});
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
   }
 
-  const {email, password} = req.body;
+  const { email, password } = req.body;
 
   try {
-    const captain = await Captain.findOne({ email }).select('+password');
+    const captain = await Captain.findOne({ email }).select("+password");
 
-    if(!captain){
-      return res.status(400).json({message: "Invalid email or password"});
+    if (!captain) {
+      return res.status(400).json({ message: "Invalid email or password" });
     }
 
     const isMatch = await captain.comparePassword(password);
 
-    if(!isMatch){
-      return res.status(400).json({message: "Invalid email or password"});
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid email or password" });
     }
 
     const token = captain.generateAuthToken();
@@ -71,7 +79,7 @@ const loginCaptain = async (req, res) => {
       return res.status(500).json({ message: "Error generating token" });
     }
 
-    res.cookie('token', token);
+    res.cookie("token", token);
 
     res.status(200).json({
       message: "Captain logged in successfully",
@@ -81,7 +89,7 @@ const loginCaptain = async (req, res) => {
     console.error("Error logging in captain:", error);
     res.status(500).json({ message: "Internal server error" });
   }
-}
+};
 
 const getCaptainProfile = async (req, res) => {
   try {
@@ -97,26 +105,22 @@ const getCaptainProfile = async (req, res) => {
 };
 
 const logoutCaptain = async (req, res) => {
-  try{
+  try {
     const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
     if (!token) {
-      return res.status(401).json({ message: "Authentication token is required" });
+      return res
+        .status(401)
+        .json({ message: "Authentication token is required" });
     }
 
     await BlacklistToken.create({ token });
 
-    res.clearCookie('token');
+    res.clearCookie("token");
     res.status(200).json({ message: "Captain logged out successfully" });
-
   } catch (error) {
     console.error("Error logging out captain:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
 
-export {
-  registerCaptain,
-  loginCaptain,
-  getCaptainProfile,
-  logoutCaptain
-};
+export { registerCaptain, loginCaptain, getCaptainProfile, logoutCaptain };
