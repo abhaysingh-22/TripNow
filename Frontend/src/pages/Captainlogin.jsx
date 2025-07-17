@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect, useContext } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { CaptainContext } from "../context/CaptainContext.jsx";
+import axios from "axios";
 
 function CaptainLogin() {
   const [email, setEmail] = useState("");
@@ -9,7 +11,8 @@ function CaptainLogin() {
   );
   const [isLoading, setIsLoading] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
-  const [captain, setCaptain] = useState({});
+  const { setCaptain } = useContext(CaptainContext);
+  const navigate = useNavigate();
 
   useEffect(() => {
     localStorage.setItem("darkMode", isDarkMode);
@@ -19,21 +22,35 @@ function CaptainLogin() {
     e.preventDefault();
     setIsLoading(true);
 
-    const userData = {
+    const captainData = {
       email,
       password,
     };
 
-    setEmail("");
-    setPassword("");
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BASE_URL}/api/captains/login`,
+        captainData
+      );
 
-    // Simulate API call
-    setTimeout(() => {
-      setCaptain(userData);
-      setShowPopup(true);
+      if (response.status === 200) {
+        const data = response.data;
+        setCaptain(data.captain);
+        localStorage.setItem("token", data.token);
+        setShowPopup(true);
+        setEmail("");
+        setPassword("");
+        setTimeout(() => {
+          setShowPopup(false);
+          navigate("/captain-home");
+        }, 1500);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("Login failed. Please check your credentials.");
+    } finally {
       setIsLoading(false);
-      setTimeout(() => setShowPopup(false), 3000);
-    }, 1000);
+    }
   };
 
   return (
