@@ -10,6 +10,8 @@ import CaptainLogout from "./pages/CaptainLogout";
 import CaptainSignup from "./pages/CaptainSignup";
 import Start from "./pages/Start";
 import UserProtectedWrapper from "./pages/UserProtectedWrapper";
+import CaptainProtectedWrapper from "./pages/CaptainProtectedWrapper";
+import CaptainHome from "./pages/CaptainHome";
 
 function App() {
   return (
@@ -18,9 +20,7 @@ function App() {
         <Route path="/" element={<Start />} />
         <Route path="/login" element={<UserLogin />} />
         <Route path="/signup" element={<UserSignup />} />
-        <Route path="/logout" element={<UserLogout />} />
         <Route path="/captain-login" element={<Captainlogin />} />
-        <Route path="/captain-logout" element={<CaptainLogout />} />
         <Route path="/captain-signup" element={<CaptainSignup />} />
         <Route
           path="/home"
@@ -30,13 +30,31 @@ function App() {
             </UserProtectedWrapper>
           }
         />
-        <Route path="/users/logout" element={
-          <UserProtectedWrapper>
-            <UserLogout />
-          </UserProtectedWrapper>
-        } />
+        <Route
+          path="/users/logout"
+          element={
+            <UserProtectedWrapper>
+              <UserLogout />
+            </UserProtectedWrapper>
+          }
+        />
+        <Route
+          path="/captain-home"
+          element={
+            <CaptainProtectedWrapper>
+              <CaptainHome />
+            </CaptainProtectedWrapper>
+          }
+        />
+        <Route
+          path="/captain/logout"
+          element={
+            <CaptainProtectedWrapper>
+              <CaptainLogout />
+            </CaptainProtectedWrapper>
+          }
+        />
       </Routes>
-      {/* <div className="bg-gray-800 text-white p-4 rounded">Hello world!</div> */}
     </>
   );
 }
