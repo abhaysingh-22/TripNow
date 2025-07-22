@@ -155,16 +155,18 @@ function Home() {
 
   const submitHandler = (e) => {
     e.preventDefault();
-    
+
     // Check if user has an active ride
     if (hasActiveRide) {
       toast.error("Unable to book ride because you're already in a ride");
       return;
     }
-    
+
     const currentPickup = hasActiveRide ? fareCheckPickup : pickup;
-    const currentDestination = hasActiveRide ? fareCheckDestination : destination;
-    
+    const currentDestination = hasActiveRide
+      ? fareCheckDestination
+      : destination;
+
     if (!currentPickup.trim() || !currentDestination.trim()) {
       toast.error("Please enter both pickup and destination locations");
       return;
@@ -204,14 +206,14 @@ function Home() {
       clearTimeout(driverSearchTimeout);
       setDriverSearchTimeout(null);
     }
-    
+
     // Reset all states
     setShowLookingForDriver(false);
     setSelectedPaymentMethod(null);
     setShowConfirmRide(false);
     setSelectedVehicle(null);
     setIsLoading(false);
-    
+
     toast.success("Ride cancelled successfully");
   };
 
@@ -238,7 +240,7 @@ function Home() {
       toast.error("You can view fares but cannot book while in an active ride");
       return;
     }
-    
+
     setSelectedRide(ride.id);
     setSelectedVehicle(ride);
     setShowConfirmRide(true);
@@ -272,7 +274,7 @@ function Home() {
   };
 
   const handleConfirmPickup = () => {
-    const selected = rideTypes.find(r => r.id === selectedRide);
+    const selected = rideTypes.find((r) => r.id === selectedRide);
     setSelectedVehicle(selected);
     setShowConfirmRide(true);
   };
@@ -348,7 +350,7 @@ function Home() {
                     <span className="text-sm font-semibold">Current Ride</span>
                   </motion.button>
                 )}
-                
+
                 <motion.button
                   initial={{ x: 50, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
@@ -356,7 +358,9 @@ function Home() {
                   whileTap={{ scale: 0.95 }}
                   onClick={() => {
                     if (hasActiveRide) {
-                      toast.error("Complete your current ride to plan a new one");
+                      toast.error(
+                        "Complete your current ride to plan a new one"
+                      );
                       return;
                     }
                     setIsSidePanelOpen(true);
@@ -428,7 +432,8 @@ function Home() {
                       <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                         <span className="text-blue-800 text-sm font-medium">
-                          You can check fares but cannot book new rides during active trip
+                          You can check fares but cannot book new rides during
+                          active trip
                         </span>
                       </div>
                     </motion.div>
@@ -436,19 +441,31 @@ function Home() {
 
                   <motion.div
                     variants={headerVariants}
-                    animate={showRideOptions && isPanelMinimized ? "minimized" : "expanded"}
+                    animate={
+                      showRideOptions && isPanelMinimized
+                        ? "minimized"
+                        : "expanded"
+                    }
                     transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className={`bg-white rounded-xl shadow-sm border ${hasActiveRide ? 'opacity-50' : ''}`}
+                    className={`bg-white rounded-xl shadow-sm border ${
+                      hasActiveRide ? "opacity-50" : ""
+                    }`}
                   >
                     <div className="flex justify-between items-center p-4">
-                      <h2 className={`font-bold ${isPanelMinimized ? "text-lg" : "text-2xl"}`}>
+                      <h2
+                        className={`font-bold ${
+                          isPanelMinimized ? "text-lg" : "text-2xl"
+                        }`}
+                      >
                         Plan your ride
                       </h2>
                       <div className="flex items-center space-x-2">
                         {showRideOptions && (
                           <motion.button
                             whileTap={{ scale: 0.95 }}
-                            onClick={() => setIsPanelMinimized(!isPanelMinimized)}
+                            onClick={() =>
+                              setIsPanelMinimized(!isPanelMinimized)
+                            }
                             className="p-2 hover:bg-gray-100 rounded-full"
                           >
                             <motion.div
@@ -476,7 +493,10 @@ function Home() {
                     >
                       <div className="px-4 pb-4">
                         <form onSubmit={submitHandler} className="space-y-4">
-                          <motion.div className="relative" whileFocus={{ scale: 1.02 }}>
+                          <motion.div
+                            className="relative"
+                            whileFocus={{ scale: 1.02 }}
+                          >
                             <MapPinIcon className="absolute left-3 top-3 w-5 h-5 text-blue-500" />
                             <input
                               type="text"
@@ -499,7 +519,11 @@ function Home() {
                             <input
                               type="text"
                               placeholder="Destination"
-                              value={hasActiveRide ? fareCheckDestination : destination}
+                              value={
+                                hasActiveRide
+                                  ? fareCheckDestination
+                                  : destination
+                              }
                               onChange={(e) => {
                                 if (hasActiveRide) {
                                   setFareCheckDestination(e.target.value);
@@ -518,10 +542,10 @@ function Home() {
                             type="submit"
                             disabled={isLoading || isSearching || hasActiveRide}
                             className={`w-full py-3 rounded-xl font-semibold transition-all relative ${
-                              hasActiveRide 
-                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                                : 'bg-black text-white hover:bg-gray-800'
-                            } ${(isLoading || isSearching) ? 'opacity-50' : ''}`}
+                              hasActiveRide
+                                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                : "bg-black text-white hover:bg-gray-800"
+                            } ${isLoading || isSearching ? "opacity-50" : ""}`}
                           >
                             {hasActiveRide ? (
                               "Complete current ride first"
@@ -600,8 +624,14 @@ function Home() {
                   ) : (
                     !isPanelMinimized && (
                       <LocationSearchPanel
-                        setPickup={hasActiveRide ? setFareCheckPickup : setPickup}
-                        setDestination={hasActiveRide ? setFareCheckDestination : setDestination}
+                        setPickup={
+                          hasActiveRide ? setFareCheckPickup : setPickup
+                        }
+                        setDestination={
+                          hasActiveRide
+                            ? setFareCheckDestination
+                            : setDestination
+                        }
                         activeInput={activeInput}
                         hasActiveRide={hasActiveRide}
                       />
@@ -619,4 +649,3 @@ function Home() {
 }
 
 export default Home;
-                                     
