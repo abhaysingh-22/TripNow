@@ -13,20 +13,20 @@ const CaptainHome = () => {
   const [showRideRequest, setShowRideRequest] = useState(false);
   const [showConfirmRide, setShowConfirmRide] = useState(false);
   const [rideData, setRideData] = useState(null);
-  
+
   // Video reference for zoom functionality
   const videoRef = useRef(null);
 
   // Captain online/offline status with localStorage persistence
   // This ensures status survives page refreshes
   const [isOnline, setIsOnline] = useState(() => {
-    const saved = localStorage.getItem('captainOnlineStatus');
+    const saved = localStorage.getItem("captainOnlineStatus");
     return saved ? JSON.parse(saved) : true;
   });
 
   // Save captain status to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('captainOnlineStatus', JSON.stringify(isOnline));
+    localStorage.setItem("captainOnlineStatus", JSON.stringify(isOnline));
   }, [isOnline]);
 
   // Hide any active ride popups when captain goes offline
@@ -40,7 +40,7 @@ const CaptainHome = () => {
   // Simulate ride requests only when captain is online
   useEffect(() => {
     if (!isOnline) return; // Don't show rides if offline
-    
+
     const timer = setTimeout(() => {
       // Mock ride data - in production this comes from backend
       setRideData({
@@ -83,8 +83,8 @@ const CaptainHome = () => {
   };
 
   const toggleDetailsPanel = () => setDetailsExpanded(!detailsExpanded);
-  const handleZoomIn = () => setMapZoom(prev => Math.min(prev + 0.1, 1.5));
-  const handleZoomOut = () => setMapZoom(prev => Math.max(prev - 0.1, 1));
+  const handleZoomIn = () => setMapZoom((prev) => Math.min(prev + 0.1, 1.5));
+  const handleZoomOut = () => setMapZoom((prev) => Math.max(prev - 0.1, 1));
 
   // Ride Management Handlers
   const handleAcceptRide = (rideId) => {
@@ -112,16 +112,16 @@ const CaptainHome = () => {
   const panelVariants = {
     expanded: { y: 0 },
     collapsed: { y: "calc(100% - 25vh)" },
-    hidden: { y: "100%" }
+    hidden: { y: "100%" },
   };
 
   const statusVariants = {
     hidden: { y: 50, opacity: 0 },
-    visible: { 
-      y: 0, 
+    visible: {
+      y: 0,
       opacity: 1,
-      transition: { delay: 0.5, type: "spring", stiffness: 300, damping: 20 }
-    }
+      transition: { delay: 0.5, type: "spring", stiffness: 300, damping: 20 },
+    },
   };
 
   return (
@@ -150,15 +150,25 @@ const CaptainHome = () => {
             className="w-12 h-5 sm:w-15 sm:h-7"
           />
         </div>
-        
+
         {/* Logout Button - Responsive sizing */}
         <button
           onClick={handleLogout}
           className="bg-red-600 hover:bg-red-700 text-white p-2 sm:p-3 rounded-full transition-colors duration-200 shadow-lg"
           aria-label="Logout"
         >
-          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          <svg
+            className="w-4 h-4 sm:w-5 sm:h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+            />
           </svg>
         </button>
       </header>
@@ -173,7 +183,11 @@ const CaptainHome = () => {
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
           >
-            <RidePopup ride={rideData} onAccept={handleAcceptRide} onIgnore={handleIgnoreRide} />
+            <RidePopup
+              ride={rideData}
+              onAccept={handleAcceptRide}
+              onIgnore={handleIgnoreRide}
+            />
           </motion.div>
         )}
       </AnimatePresence>
@@ -187,7 +201,11 @@ const CaptainHome = () => {
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
           >
-            <ConfirmRidePopup ride={rideData} onConfirm={handleConfirmRide} onCancel={handleCancelRide} />
+            <ConfirmRidePopup
+              ride={rideData}
+              onConfirm={handleConfirmRide}
+              onCancel={handleCancelRide}
+            />
           </motion.div>
         )}
       </AnimatePresence>
@@ -222,12 +240,17 @@ const CaptainHome = () => {
       {/* Status Indicator - Shows online/offline status when panel is minimized */}
       {!detailsExpanded && !showRideRequest && !showConfirmRide && (
         <motion.div
-          className={`absolute bottom-[calc(25vh+20px)] left-1/2 transform -translate-x-1/2 text-white px-3 py-2 sm:px-4 sm:py-2.5 rounded-full shadow-lg z-30 flex items-center text-sm sm:text-base ${isOnline ? 'bg-green-500' : 'bg-red-500'}`}
+          className={`absolute bottom-[calc(25vh+20px)] left-1/2 transform -translate-x-1/2 text-white px-3 py-2 sm:px-4 sm:py-2.5 rounded-full shadow-lg z-30 flex items-center text-sm sm:text-base ${
+            isOnline ? "bg-green-500" : "bg-red-500"
+          }`}
           variants={statusVariants}
           initial="hidden"
           animate="visible"
           exit="hidden"
-          whileHover={{ scale: 1.05, boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.2)" }}
+          whileHover={{
+            scale: 1.05,
+            boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.2)",
+          }}
         >
           <motion.span
             className="inline-block w-2 h-2 sm:w-3 sm:h-3 bg-white rounded-full mr-2"
@@ -235,7 +258,9 @@ const CaptainHome = () => {
             transition={{ duration: 1.5, repeat: Infinity }}
           />
           <span className="font-medium whitespace-nowrap">
-            {isOnline ? "Active - Ready for Rides" : "Inactive - Can't take rides"}
+            {isOnline
+              ? "Active - Ready for Rides"
+              : "Inactive - Can't take rides"}
           </span>
         </motion.div>
       )}
@@ -251,11 +276,21 @@ const CaptainHome = () => {
             whileHover={{ scale: 1.1, backgroundColor: "#f9fafb" }}
             whileTap={{ scale: 0.95 }}
           >
-            <svg className="w-4 h-4 sm:w-6 sm:h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            <svg
+              className="w-4 h-4 sm:w-6 sm:h-6 text-gray-700"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+              />
             </svg>
           </motion.button>
-          
+
           {/* Zoom Out Button */}
           <motion.button
             className="bg-white rounded-full p-2 sm:p-3 shadow-lg"
@@ -264,20 +299,45 @@ const CaptainHome = () => {
             whileHover={{ scale: 1.1, backgroundColor: "#f9fafb" }}
             whileTap={{ scale: 0.95 }}
           >
-            <svg className="w-4 h-4 sm:w-6 sm:h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+            <svg
+              className="w-4 h-4 sm:w-6 sm:h-6 text-gray-700"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M20 12H4"
+              />
             </svg>
           </motion.button>
-          
+
           {/* Center Location Button */}
           <motion.button
             className="bg-white rounded-full p-2 sm:p-3 shadow-lg"
             whileHover={{ scale: 1.1, backgroundColor: "#f9fafb" }}
             whileTap={{ scale: 0.95 }}
           >
-            <svg className="w-4 h-4 sm:w-6 sm:h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            <svg
+              className="w-4 h-4 sm:w-6 sm:h-6 text-gray-700"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+              />
             </svg>
           </motion.button>
         </div>
