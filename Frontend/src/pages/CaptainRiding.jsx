@@ -9,14 +9,14 @@ import mapVideo from "../assets/maps.mp4";
 function CaptainRiding() {
   // Map interaction state
   const [mapZoom, setMapZoom] = useState(1);
-  
+
   // Ride progress tracking - initialized to show immediate destination reached for demo
   const [remainingTime, setRemainingTime] = useState(0); // in minutes
   const [remainingDistance, setRemainingDistance] = useState(0); // in km
   const [isRideComplete, setIsRideComplete] = useState(false);
   const [showFinishPanel, setShowFinishPanel] = useState(false);
   const [showDestinationMessage, setShowDestinationMessage] = useState(false);
-  
+
   // Refs and navigation
   const videoRef = useRef(null);
   const navigate = useNavigate();
@@ -100,30 +100,30 @@ function CaptainRiding() {
   const animations = {
     panel: {
       hidden: { y: "100%", opacity: 0 },
-      visible: { 
-        y: 0, 
-        opacity: 1, 
-        transition: { type: "spring", damping: 25, stiffness: 200 } 
+      visible: {
+        y: 0,
+        opacity: 1,
+        transition: { type: "spring", damping: 25, stiffness: 200 },
       },
-      exit: { 
-        y: "100%", 
-        opacity: 0, 
-        transition: { duration: 0.3 } 
-      }
+      exit: {
+        y: "100%",
+        opacity: 0,
+        transition: { duration: 0.3 },
+      },
     },
     message: {
       hidden: { scale: 0, opacity: 0 },
-      visible: { 
-        scale: 1, 
-        opacity: 1, 
-        transition: { type: "spring", damping: 20 } 
+      visible: {
+        scale: 1,
+        opacity: 1,
+        transition: { type: "spring", damping: 20 },
       },
-      exit: { 
-        scale: 0, 
-        opacity: 0, 
-        transition: { duration: 0.2 } 
-      }
-    }
+      exit: {
+        scale: 0,
+        opacity: 0,
+        transition: { duration: 0.2 },
+      },
+    },
   };
 
   return (
@@ -227,9 +227,12 @@ function CaptainRiding() {
       <motion.div
         className="absolute bottom-0 left-0 right-0 z-40 bg-white rounded-t-2xl shadow-lg overflow-hidden"
         initial={{ y: 0, height: "180px" }}
-        animate={{ 
-          height: showFinishPanel ? "450px" : 
-                  (showDestinationMessage ? "320px" : "180px")
+        animate={{
+          height: showFinishPanel
+            ? "450px"
+            : showDestinationMessage
+            ? "320px"
+            : "180px",
         }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         style={{ bottom: 0 }}
@@ -241,7 +244,6 @@ function CaptainRiding() {
 
         {/* Scrollable content area - allows vertical scrolling when content exceeds panel height */}
         <div className="h-full overflow-y-auto pb-6">
-          
           {/* Finish Ride Panel - Shows payment collection and ride completion interface */}
           {showFinishPanel ? (
             <motion.div
@@ -268,7 +270,9 @@ function CaptainRiding() {
                     />
                   </svg>
                 </div>
-                <h2 className="text-lg sm:text-xl font-bold text-gray-800">Ride Completed</h2>
+                <h2 className="text-lg sm:text-xl font-bold text-gray-800">
+                  Ride Completed
+                </h2>
                 <p className="text-xs sm:text-sm text-gray-500 mt-1">
                   Finalize the ride details
                 </p>
@@ -374,11 +378,15 @@ function CaptainRiding() {
               <div className="flex justify-between mb-4 sm:mb-5 py-2 sm:py-3 px-3 sm:px-4 bg-gray-50 rounded-lg">
                 <div className="text-center">
                   <p className="text-xs text-gray-500">Distance</p>
-                  <p className="font-bold text-gray-800 text-sm">{rideData.distance} km</p>
+                  <p className="font-bold text-gray-800 text-sm">
+                    {rideData.distance} km
+                  </p>
                 </div>
                 <div className="text-center">
                   <p className="text-xs text-gray-500">Duration</p>
-                  <p className="font-bold text-gray-800 text-sm">{rideData.duration} min</p>
+                  <p className="font-bold text-gray-800 text-sm">
+                    {rideData.duration} min
+                  </p>
                 </div>
                 <div className="text-center">
                   <p className="text-xs text-gray-500">Total</p>
@@ -416,7 +424,7 @@ function CaptainRiding() {
               {/* Destination Reached Notification - Appears after 3 second delay */}
               <AnimatePresence>
                 {showDestinationMessage && (
-                  <motion.div 
+                  <motion.div
                     variants={animations.message}
                     initial="hidden"
                     animate="visible"
@@ -469,7 +477,9 @@ function CaptainRiding() {
                         >
                           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                         </svg>
-                        <span className="text-xs sm:text-sm ml-1">{rideData.user.rating}</span>
+                        <span className="text-xs sm:text-sm ml-1">
+                          {rideData.user.rating}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -509,7 +519,9 @@ function CaptainRiding() {
                     </div>
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs sm:text-sm text-gray-500">Destination</p>
+                    <p className="text-xs sm:text-sm text-gray-500">
+                      Destination
+                    </p>
                     <p className="font-semibold text-gray-800 text-sm sm:text-base">
                       {rideData.destination.address}
                     </p>
@@ -520,7 +532,7 @@ function CaptainRiding() {
                 {/* This button triggers the ride completion flow */}
                 <AnimatePresence>
                   {showDestinationMessage && (
-                    <motion.div 
+                    <motion.div
                       variants={animations.panel}
                       initial="hidden"
                       animate="visible"
@@ -531,11 +543,11 @@ function CaptainRiding() {
                         onClick={handleCompleteRide}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        style={{ 
-                          minHeight: '48px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
+                        style={{
+                          minHeight: "48px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
                         }}
                         aria-label="Complete the current ride"
                       >
@@ -583,7 +595,7 @@ function CaptainRiding() {
                   />
                 </svg>
               </div>
-              
+
               {/* Success message */}
               <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
                 Ride Completed!
