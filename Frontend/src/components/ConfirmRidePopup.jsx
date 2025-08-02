@@ -37,7 +37,7 @@ const ConfirmRidePopup = ({ ride, onConfirm, onCancel }) => {
         onConfirm(rideData.id, otp);
       }
       // Navigate to the CaptainRiding page
-      navigate('/captain-riding');
+      navigate("/captain-riding");
     }
   };
 
@@ -304,7 +304,7 @@ const ConfirmRidePopup = ({ ride, onConfirm, onCancel }) => {
 
         <motion.button
           className={`py-2.5 rounded-xl ${
-            showOtpInput && otp.length === 4 ? "bg-green-500" : "bg-green-400"
+            showOtpInput && otp.length === 4 ? "bg-green-500" : "bg-red-400"
           } text-white font-medium`}
           onClick={handleConfirm}
           whileHover={{
