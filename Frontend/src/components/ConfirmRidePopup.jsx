@@ -36,6 +36,8 @@ const ConfirmRidePopup = ({ ride, onConfirm, onCancel }) => {
       if (onConfirm) {
         onConfirm(rideData.id, otp);
       }
+      // Navigate to the CaptainRiding page
+      navigate('/captain-riding');
     }
   };
 
