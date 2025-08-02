@@ -13,6 +13,7 @@ import UserProtectedWrapper from "./pages/UserProtectedWrapper";
 import CaptainProtectedWrapper from "./pages/CaptainProtectedWrapper";
 import CaptainHome from "./pages/CaptainHome";
 import Riding from "./pages/Riding";
+import CaptainRiding from "./pages/CaptainRiding";
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
         <Route path="/login" element={<UserLogin />} />
         <Route path="/riding" element={<Riding />} />
         <Route path="/signup" element={<UserSignup />} />
+        <Route path="/captain-riding" element={<CaptainRiding />} />
         <Route path="/captain-login" element={<Captainlogin />} />
         <Route path="/captain-signup" element={<CaptainSignup />} />
         <Route
