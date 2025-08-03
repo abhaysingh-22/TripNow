@@ -19,6 +19,25 @@ const geocode = async (req, res, next) => {
   }
 };
 
+const getDistanceTime = async (req, res, next) => {
+    // Validate request parameters
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+    
+    const { origin, destination } = req.query;
+    
+    try {
+        // Call the service to get distance and time
+        const distanceTime = await mapsService.getDistanceTime(origin, destination);
+        return res.status(200).json(distanceTime);
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+};
+
 export default {
   geocode,
+  getDistanceTime,
 };
