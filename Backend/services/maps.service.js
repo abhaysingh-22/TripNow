@@ -65,6 +65,44 @@ async function getCoordinates(address) {
 //     })();
 // }
 
+async function getDistanceTime(origin, destination) {
+
+    if (!origin || !destination) {
+      throw new Error("Origin and destination must be provided.");
+    }
+
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!apiKey) {
+    throw new Error("Google Maps API key not set in environment variables.");
+  }
+  const url = `https://maps.gomaps.pro/maps/api/distancematrix/json`;
+  try {
+    const response = await axios.get(url, {
+      params: {
+        origins: origin,
+        destinations: destination,
+        key: apiKey,
+      },
+    });
+    const data = response.data;
+    if (data.status !== "OK") {
+      throw new Error(`GoMaps.pro API error: ${data.status}`);
+    }
+    if (data.rows && data.rows.length > 0 && data.rows[0].elements.length > 0) {
+      const element = data.rows[0].elements[0];
+      return {
+        distance: element.distance.text,
+        duration: element.duration.text,
+      };
+    } else {
+      throw new Error("No results found for the given origin and destination.");
+    }
+  } catch (error) {
+    throw new Error(`Failed to fetch distance and time: ${error.message}`);
+  }
+}
+
 export default {
   getCoordinates,
+  getDistanceTime,
 };
