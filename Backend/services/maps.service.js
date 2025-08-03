@@ -1,0 +1,70 @@
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// Get the directory of the current module
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Configure dotenv to look for .env file in the Backend directory
+dotenv.config({ path: path.join(__dirname, "..", ".env") });
+
+import axios from "axios";
+/**
+ * Get coordinates (latitude, longitude) for a given address using GoMaps.pro Geocoding API.
+ * @param {string} address - The address to geocode.
+ * @returns {Promise<{ latitude: number, longitude: number }>} - Coordinates object.
+ */
+async function getCoordinates(address) {
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!apiKey) {
+    throw new Error("GoMaps.pro API key not set in environment variables.");
+  }
+  // Use a default address if input is invalid
+  const validAddress =
+    address && typeof address === "string" && address.trim() !== ""
+      ? address
+      : "1600 Amphitheatre Parkway, Mountain View, CA";
+  const url = `https://maps.gomaps.pro/maps/api/geocode/json`;
+
+  try {
+    const response = await axios.get(url, {
+      params: {
+        address: validAddress,
+        key: apiKey,
+      },
+    });
+    // Check for API error or invalid status
+    const data = response.data;
+    if (data.status !== "OK") {
+      const errorMsg =
+        data.error_message || `GoMaps.pro API error: ${data.status}`;
+      throw new Error(errorMsg);
+    }
+    const results = data.results;
+    if (results && results.length > 0) {
+      const location = results[0].geometry.location;
+      return {
+        latitude: location.lat,
+        longitude: location.lng,
+      };
+    } else {
+      throw new Error("No results found for the given address.");
+    }
+  } catch (error) {
+    throw new Error(`Failed to fetch coordinates: ${error.message}`);
+  }
+}
+// Test the function when running this file directly (ES6 module)
+// if (fileURLToPath(import.meta.url) === process.argv[1]) {
+//     (async () => {
+//         try {
+//             const coords = await getCoordinates('1600 Amphitheatre Parkway, Mountain View, CA');
+//             console.log('Coordinates:', coords);
+//         } catch (err) {
+//             console.error('Error:', err.message);
+//         }
+//     })();
+// }
+
+export default {
+  getCoordinates,
+};
