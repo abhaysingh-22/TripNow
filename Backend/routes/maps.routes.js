@@ -20,4 +20,11 @@ router.get(
   mapsController.getDistanceTime
 );
 
+router.get(
+  "/suggestions",
+  authUser,
+  query("input").isString().notEmpty(),
+  mapsController.getSuggestions
+);
+
 export default router;
