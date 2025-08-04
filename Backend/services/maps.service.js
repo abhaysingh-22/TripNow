@@ -13,6 +13,8 @@ import axios from "axios";
  * @param {string} address - The address to geocode.
  * @returns {Promise<{ latitude: number, longitude: number }>} - Coordinates object.
  */
+
+
 async function getCoordinates(address) {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   if (!apiKey) {
@@ -102,7 +104,36 @@ async function getDistanceTime(origin, destination) {
   }
 }
 
+async function getSuggestions(input) {
+
+  if (!input || typeof input !== "string" || input.trim() === "") {
+    throw new Error("Input must be a non-empty string.");
+  }
+
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!apiKey) {
+    throw new Error("Google Maps API key not set in environment variables.");
+  }
+  const url = `https://maps.gomaps.pro/maps/api/place/autocomplete/json`;
+  try {
+    const response = await axios.get(url, {
+      params: {
+        input,
+        key: apiKey,
+      },
+    });
+    const data = response.data;
+    if (data.status !== "OK") {
+      throw new Error(`GoMaps.pro API error: ${data.status}`);
+    }
+    return data.predictions;
+  } catch (error) {
+    throw new Error(`Failed to fetch suggestions: ${error.message}`);
+  }
+}
+
 export default {
   getCoordinates,
   getDistanceTime,
+  getSuggestions,
 };
