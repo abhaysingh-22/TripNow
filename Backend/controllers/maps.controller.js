@@ -37,7 +37,26 @@ const getDistanceTime = async (req, res, next) => {
     }
 };
 
+const getSuggestions = async (req, res, next) => {
+    // Validate request parameters
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { input } = req.query;
+
+    try {
+        // Call the service to get suggestions
+        const suggestions = await mapsService.getSuggestions(input);
+        return res.status(200).json(suggestions);
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+};
+
 export default {
   geocode,
   getDistanceTime,
+  getSuggestions
 };
