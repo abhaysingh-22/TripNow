@@ -8,8 +8,29 @@ import {
 } from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
 
-function LocationSearchPanel({ setPickup, setDestination, activeInput, hasActiveRide }) {
+function LocationSearchPanel({ 
+  setPickup, 
+  setDestination, 
+  activeInput, 
+  hasActiveRide,
+  suggestions = [],
+  isLoadingSuggestions = false,
+  showSuggestions = false,
+  onSuggestionSelect,
+  onInputChange,
+  pickup = "",
+  destination = ""
+}) {
   const [selectedLocation, setSelectedLocation] = useState(null);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+
+  // Debug logging
+  console.log('LocationSearchPanel props:', {
+    suggestions: suggestions?.length || 0,
+    isLoadingSuggestions,
+    showSuggestions,
+    activeInput
+  });
 
   const locations = [
     {
@@ -50,11 +71,43 @@ function LocationSearchPanel({ setPickup, setDestination, activeInput, hasActive
     }
   };
 
+  // Handle keyboard navigation
+  const handleKeyDown = (e) => {
+    if (!showSuggestions || suggestions.length === 0) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedSuggestionIndex(prev => 
+          prev < suggestions.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedSuggestionIndex(prev => 
+          prev > 0 ? prev - 1 : suggestions.length - 1
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (selectedSuggestionIndex >= 0 && selectedSuggestionIndex < suggestions.length) {
+          onSuggestionSelect && onSuggestionSelect(suggestions[selectedSuggestionIndex]);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        setSelectedSuggestionIndex(-1);
+        // Clear suggestions by calling parent
+        onInputChange && onInputChange('', activeInput);
+        break;
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="mt-6 border-t pt-6"
+      className="mt-6 border-t pt-6 relative w-full"
     >
       <h3 className="text-sm font-medium text-gray-900 mb-4 text-left">
         {hasActiveRide ? "CHECK FARES FOR " : "SELECT "}
@@ -70,6 +123,9 @@ function LocationSearchPanel({ setPickup, setDestination, activeInput, hasActive
       )}
       
       <div className="space-y-1 max-h-[300px] overflow-y-auto">
+        <div className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">
+          Quick Selections
+        </div>
         {locations.map((location, index) => (
           <div
             key={index}
