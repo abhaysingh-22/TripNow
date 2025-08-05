@@ -26,89 +26,92 @@ export const useSuggestions = () => {
   const { getAuthToken } = useAuth();
 
   // Fetch suggestions from backend
-  const fetchSuggestions = async (input) => {
-    console.log("fetchSuggestions called with input:", input);
+  const fetchSuggestions = useCallback(
+    async (input) => {
+      console.log("fetchSuggestions called with input:", input);
 
-    if (!input || input.trim().length < 2) {
-      console.log("Input too short, clearing suggestions");
-      setSuggestions([]);
-      setShowSuggestions(false);
-      return;
-    }
-
-    setIsLoadingSuggestions(true);
-    console.log("Starting to fetch suggestions...");
-
-    try {
-      const token = getAuthToken();
-      console.log("Token found:", !!token);
-
-      if (!token) {
-        console.log("No token found");
-        toast.error("Please login to search locations");
+      if (!input || input.trim().length < 2) {
+        console.log("Input too short, clearing suggestions");
         setSuggestions([]);
         setShowSuggestions(false);
-        setIsLoadingSuggestions(false);
         return;
       }
 
-      console.log("Making API call to:", `${API_BASE_URL}/maps/suggestions`);
-      const response = await axios.get(`${API_BASE_URL}/maps/suggestions`, {
-        params: { input: input.trim() },
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        timeout: 10000,
-      });
+      setIsLoadingSuggestions(true);
+      console.log("Starting to fetch suggestions...");
 
-      console.log("API response status:", response.status);
-      console.log("API response:", response.data);
+      try {
+        const token = getAuthToken();
+        console.log("Token found:", !!token);
 
-      if (response.data && Array.isArray(response.data)) {
-        console.log("Setting suggestions:", response.data.length, "items");
-        setSuggestions(response.data);
-        setShowSuggestions(response.data.length > 0);
-      } else {
-        console.log("Invalid response format:", response.data);
+        if (!token) {
+          console.log("No token found");
+          toast.error("Please login to search locations");
+          setSuggestions([]);
+          setShowSuggestions(false);
+          setIsLoadingSuggestions(false);
+          return;
+        }
+
+        console.log("Making API call to:", `${API_BASE_URL}/maps/suggestions`);
+        const response = await axios.get(`${API_BASE_URL}/maps/suggestions`, {
+          params: { input: input.trim() },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          timeout: 10000,
+        });
+
+        console.log("API response status:", response.status);
+        console.log("API response:", response.data);
+
+        if (response.data && Array.isArray(response.data)) {
+          console.log("Setting suggestions:", response.data.length, "items");
+          setSuggestions(response.data);
+          setShowSuggestions(response.data.length > 0);
+        } else {
+          console.log("Invalid response format:", response.data);
+          setSuggestions([]);
+          setShowSuggestions(false);
+        }
+      } catch (error) {
+        console.error("Error fetching suggestions:", error);
+
+        // Handle different error types
+        if (error.code === "ECONNABORTED") {
+          toast.error("Request timeout. Please try again.");
+        } else if (error.response?.status === 401) {
+          toast.error("Please login to search locations");
+        } else if (error.response?.status === 429) {
+          toast.error("Too many requests. Please wait a moment.");
+        } else if (error.response?.status >= 500) {
+          toast.error("Server error. Please try again later.");
+        } else if (!navigator.onLine) {
+          toast.error("Please check your internet connection");
+        } else {
+          toast.error(`Failed to fetch location suggestions: ${error.message}`);
+        }
+
         setSuggestions([]);
         setShowSuggestions(false);
+      } finally {
+        setIsLoadingSuggestions(false);
       }
-    } catch (error) {
-      console.error("Error fetching suggestions:", error);
-
-      // Handle different error types
-      if (error.code === "ECONNABORTED") {
-        toast.error("Request timeout. Please try again.");
-      } else if (error.response?.status === 401) {
-        toast.error("Please login to search locations");
-      } else if (error.response?.status === 429) {
-        toast.error("Too many requests. Please wait a moment.");
-      } else if (error.response?.status >= 500) {
-        toast.error("Server error. Please try again later.");
-      } else if (!navigator.onLine) {
-        toast.error("Please check your internet connection");
-      } else {
-        toast.error(`Failed to fetch location suggestions: ${error.message}`);
-      }
-
-      setSuggestions([]);
-      setShowSuggestions(false);
-    } finally {
-      setIsLoadingSuggestions(false);
-    }
-  };
+    },
+    [getAuthToken]
+  );
 
   // Debounced version of fetchSuggestions
   const debouncedFetchSuggestions = useCallback(
     debounce(fetchSuggestions, 300),
-    []
+    [fetchSuggestions]
   );
 
-  const clearSuggestions = () => {
+  const clearSuggestions = useCallback(() => {
     setSuggestions([]);
     setShowSuggestions(false);
-  };
+  }, []);
 
   return {
     suggestions,
