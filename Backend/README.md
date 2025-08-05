@@ -9,6 +9,7 @@ This is the backend API for the Uber clone application built with Node.js, Expre
 - Node.js (v14 or higher)
 - MongoDB Atlas account or local MongoDB installation
 - npm or yarn package manager
+- Google Maps API key with Geocoding API, Distance Matrix API, and Places API enabled
 
 ### Installation
 1. Clone the repository
@@ -19,10 +20,361 @@ This is the backend API for the Uber clone application built with Node.js, Expre
    MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/uber
    JWT_SECRET=your-secret-key
    FRONTEND_URL=http://localhost:3000
+   GOOGLE_MAPS_API_KEY=your-google-maps-api-key
    ```
 4. Start the server: `npm run dev`
 
+## Dependencies
+
+### Production Dependencies
+- **express** (v5.1.0) - Web application framework for Node.js
+- **mongoose** (v8.16.1) - MongoDB object modeling for Node.js
+- **bcrypt** (v6.0.0) - Password hashing library
+- **jsonwebtoken** (v9.0.2) - JWT token implementation
+- **express-validator** (v7.2.1) - Middleware for input validation
+- **cors** (v2.8.5) - Cross-Origin Resource Sharing middleware
+- **cookie-parser** (v1.4.7) - Cookie parsing middleware
+- **dotenv** (v17.0.1) - Environment variable loader
+- **axios** (v1.11.0) - HTTP client for external API calls (Google Maps)
+
+### Development Dependencies
+- **nodemon** (v3.1.10) - Development server with hot reload
+
 ## API Endpoints
+
+### Maps Management
+
+#### GET /api/maps/geocode
+Get coordinates (latitude, longitude) for a given address.
+
+**Description:** Converts a human-readable address into geographic coordinates using Google Maps Geocoding API. This endpoint is protected and requires user authentication to prevent unauthorized API usage and costs.
+
+**Request URL:** `GET http://localhost:4000/api/maps/geocode?address={address}`
+
+**Request Headers:**
+```
+Content-Type: application/json
+Authorization: Bearer <token>
+```
+**OR**
+```
+Cookie: token=<token>
+```
+
+**Authentication:** Required (JWT token via Authorization header or cookie)
+
+**Query Parameters:**
+- `address` (required): String - The address to geocode (e.g., "1600 Amphitheatre Parkway, Mountain View, CA")
+
+**Response Status Codes:**
+
+| Status Code | Description |
+|-------------|-------------|
+| 200 | Coordinates retrieved successfully |
+| 400 | Bad request - Missing or invalid address parameter |
+| 401 | Unauthorized - Invalid or missing token |
+| 500 | Internal server error - Google Maps API error |
+
+**Success Response (200):**
+```json
+{
+  "latitude": 37.4219999,
+  "longitude": -122.0840575
+}
+```
+
+**Error Response (400 - Validation):**
+```json
+{
+  "errors": [
+    {
+      "msg": "Invalid value",
+      "param": "address",
+      "location": "query"
+    }
+  ]
+}
+```
+
+**Error Response (401 - Unauthorized):**
+```json
+{
+  "error": "Authentication token is required"
+}
+```
+
+**Error Response (500 - API Error):**
+```json
+{
+  "error": "GoMaps.pro API key not set in environment variables."
+}
+```
+
+#### GET /api/maps/distance-time
+Get distance and duration between two locations.
+
+**Description:** Calculates the distance and travel time between origin and destination addresses using Google Maps Distance Matrix API. Requires user authentication.
+
+**Request URL:** `GET http://localhost:4000/api/maps/distance-time?origin={origin}&destination={destination}`
+
+**Request Headers:**
+```
+Content-Type: application/json
+Authorization: Bearer <token>
+```
+**OR**
+```
+Cookie: token=<token>
+```
+
+**Authentication:** Required (JWT token via Authorization header or cookie)
+
+**Query Parameters:**
+- `origin` (required): String - Starting location address
+- `destination` (required): String - Destination location address
+
+**Response Status Codes:**
+
+| Status Code | Description |
+|-------------|-------------|
+| 200 | Distance and time retrieved successfully |
+| 400 | Bad request - Missing origin or destination |
+| 401 | Unauthorized - Invalid or missing token |
+| 500 | Internal server error - Google Maps API error |
+
+**Success Response (200):**
+```json
+{
+  "distance": "15.2 km",
+  "duration": "22 mins"
+}
+```
+
+**Error Response (400 - Validation):**
+```json
+{
+  "errors": [
+    {
+      "msg": "Invalid value",
+      "param": "origin",
+      "location": "query"
+    },
+    {
+      "msg": "Invalid value",
+      "param": "destination",
+      "location": "query"
+    }
+  ]
+}
+```
+
+**Error Response (500 - API Error):**
+```json
+{
+  "error": "Failed to fetch distance and time: GoMaps.pro API error: ZERO_RESULTS"
+}
+```
+
+#### GET /api/maps/suggestions
+Get autocomplete suggestions for place search.
+
+**Description:** Provides place autocomplete suggestions based on user input using Google Maps Places API. Helps users select accurate addresses. Requires user authentication.
+
+**Request URL:** `GET http://localhost:4000/api/maps/suggestions?input={input}`
+
+**Request Headers:**
+```
+Content-Type: application/json
+Authorization: Bearer <token>
+```
+**OR**
+```
+Cookie: token=<token>
+```
+
+**Authentication:** Required (JWT token via Authorization header or cookie)
+
+**Query Parameters:**
+- `input` (required): String - Partial address or place name to get suggestions for
+
+**Response Status Codes:**
+
+| Status Code | Description |
+|-------------|-------------|
+| 200 | Suggestions retrieved successfully |
+| 400 | Bad request - Missing or empty input parameter |
+| 401 | Unauthorized - Invalid or missing token |
+| 500 | Internal server error - Google Maps API error |
+
+**Success Response (200):**
+```json
+[
+  {
+    "description": "New York, NY, USA",
+    "matched_substrings": [
+      {
+        "length": 8,
+        "offset": 0
+      }
+    ],
+    "place_id": "ChIJOwg_06VPwokRYv534QaPC8g",
+    "reference": "ChIJOwg_06VPwokRYv534QaPC8g",
+    "structured_formatting": {
+      "main_text": "New York",
+      "main_text_matched_substrings": [
+        {
+          "length": 8,
+          "offset": 0
+        }
+      ],
+      "secondary_text": "NY, USA"
+    },
+    "terms": [
+      {
+        "offset": 0,
+        "value": "New York"
+      },
+      {
+        "offset": 10,
+        "value": "NY"
+      },
+      {
+        "offset": 14,
+        "value": "USA"
+      }
+    ],
+    "types": [
+      "locality",
+      "political",
+      "geocode"
+    ]
+  }
+]
+```
+
+**Error Response (400 - Validation):**
+```json
+{
+  "errors": [
+    {
+      "msg": "Invalid value",
+      "param": "input",
+      "location": "query"
+    }
+  ]
+}
+```
+
+**Error Response (500 - API Error):**
+```json
+{
+  "error": "Failed to fetch suggestions: Input must be a non-empty string."
+}
+```
+
+### Ride Management
+
+#### POST /api/rides/create
+Create a new ride request.
+
+**Description:** Creates a new ride request with pickup and dropoff locations, calculates fare automatically based on distance, duration, and vehicle type. Generates an OTP for ride verification. Requires user authentication.
+
+**Request URL:** `POST http://localhost:4000/api/rides/create`
+
+**Request Headers:**
+```
+Content-Type: application/json
+Authorization: Bearer <token>
+```
+**OR**
+```
+Cookie: token=<token>
+```
+
+**Authentication:** Required (JWT token via Authorization header or cookie)
+
+**Request Body:**
+```json
+{
+  "pickup": "Times Square, New York, NY, USA",
+  "dropoff": "Central Park, New York, NY, USA",
+  "vehicleType": "car"
+}
+```
+
+**Request Body Validation:**
+- `pickup` (required): String - Pickup location address, non-empty
+- `dropoff` (required): String - Dropoff location address, non-empty
+- `vehicleType` (required): String - Type of vehicle ("auto", "car", "motorcycle", "bike")
+
+**Response Status Codes:**
+
+| Status Code | Description |
+|-------------|-------------|
+| 201 | Ride created successfully |
+| 400 | Bad request - Validation errors |
+| 401 | Unauthorized - Invalid or missing token |
+| 500 | Internal server error - Fare calculation or database error |
+
+**Success Response (201):**
+```json
+{
+  "_id": "64f8b1c2d4e5f6a7b8c9d0e1",
+  "userId": "64f8b1c2d4e5f6a7b8c9d0e0",
+  "pickupLocation": "Times Square, New York, NY, USA",
+  "dropoffLocation": "Central Park, New York, NY, USA",
+  "fare": 125.75,
+  "status": "pending",
+  "otp": "1234",
+  "createdAt": "2023-09-07T10:30:00.000Z",
+  "updatedAt": "2023-09-07T10:30:00.000Z",
+  "__v": 0
+}
+```
+
+**Error Response (400 - Validation):**
+```json
+{
+  "errors": [
+    {
+      "msg": "Pickup location is required",
+      "param": "pickup",
+      "location": "body"
+    },
+    {
+      "msg": "Dropoff location is required",
+      "param": "dropoff",
+      "location": "body"
+    },
+    {
+      "msg": "Vehicle type is required",
+      "param": "vehicleType",
+      "location": "body"
+    }
+  ]
+}
+```
+
+**Error Response (401 - Unauthorized):**
+```json
+{
+  "error": "Authentication token is required"
+}
+```
+
+**Error Response (500 - Fare Calculation Error):**
+```json
+{
+  "error": "Failed to calculate fare: Could not retrieve distance or duration."
+}
+```
+
+**Error Response (500 - Database Error):**
+```json
+{
+  "error": "Failed to create ride: User ID, pickup location, dropoff location, and vehicle type are required."
+}
+```
 
 ### Authentication
 
@@ -643,6 +995,26 @@ Cookie: token=<token>
 }
 ```
 
+### Ride Model
+```javascript
+{
+  userId: ObjectId (required, ref: "User"),
+  captainId: ObjectId (optional, ref: "Driver"),
+  pickupLocation: String (required),
+  dropoffLocation: String (required),
+  fare: Number (required),
+  status: String (enum: "pending", "in-progress", "completed", "cancelled", default: "pending"),
+  duration: Number (optional),
+  distance: Number (optional),
+  paymentId: String (optional),
+  orderId: String (optional),
+  signature: String (optional),
+  otp: String (required, excluded from queries by default),
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
 ## Environment Variables
 
 | Variable | Description | Example |
@@ -651,72 +1023,147 @@ Cookie: token=<token>
 | MONGODB_URI | MongoDB connection string | mongodb+srv://... |
 | JWT_SECRET | Secret key for JWT tokens | your-secret-key |
 | FRONTEND_URL | Frontend application URL | http://localhost:3000 |
+| GOOGLE_MAPS_API_KEY | Google Maps API key for geocoding, distance matrix, and places API | your-google-maps-api-key |
 
 ## Testing with Postman
 
-### Register User
+### User Authentication
+
+#### Register User
 1. Set method to `POST`
 2. Set URL to `http://localhost:4000/api/users/register`
 3. Set header: `Content-Type: application/json`
 4. Set body to raw JSON with fullName, email, and password
 5. Send the request
 
-### Login User
+#### Login User
 1. Set method to `POST`
 2. Set URL to `http://localhost:4000/api/users/login`
 3. Set header: `Content-Type: application/json`
 4. Set body to raw JSON with email and password
 5. Send the request
 
-### Get User Profile
+#### Get User Profile
 1. Set method to `GET`
 2. Set URL to `http://localhost:4000/api/users/profile`
 3. Set header: `Authorization: Bearer <token>` (copy token from login response)
 4. Send the request
 
-### Logout User
+#### Logout User
 1. Set method to `GET`
 2. Set URL to `http://localhost:4000/api/users/logout`
 3. Set header: `Authorization: Bearer <token>`
 4. Send the request
 
-### Register Captain
+### Captain Authentication
+
+#### Register Captain
 1. Set method to `POST`
 2. Set URL to `http://localhost:4000/api/captains/register`
 3. Set header: `Content-Type: application/json`
 4. Set body to raw JSON with fullName, email, password, and vehicle details
 5. Send the request
 
-### Login Captain
+#### Login Captain
 1. Set method to `POST`
 2. Set URL to `http://localhost:4000/api/captains/login`
 3. Set header: `Content-Type: application/json`
 4. Set body to raw JSON with email and password
 5. Send the request
 
-### Get Captain Profile
+#### Get Captain Profile
 1. Set method to `GET`
 2. Set URL to `http://localhost:4000/api/captains/profile`
 3. Set header: `Authorization: Bearer <token>` (copy token from login response)
 4. Send the request
 
-### Logout Captain
+#### Logout Captain
 1. Set method to `GET`
 2. Set URL to `http://localhost:4000/api/captains/logout`
 3. Set header: `Authorization: Bearer <token>`
 4. Send the request
 
-## Security Features
+### Maps API Testing
 
-- Password hashing with bcrypt (10 rounds)
-- JWT token authentication (1 hour for captains, 24 hours for users)
-- Token blacklisting for secure logout
-- Input validation with express-validator
-- CORS configuration with credentials support
-- Password field excluded from queries by default
-- Secure password comparison with bcrypt
-- Cookie-based authentication with httpOnly flag
-- Separate authentication middleware for users and captains
+#### Get Coordinates (Geocoding)
+1. Set method to `GET`
+2. Set URL to `http://localhost:4000/api/maps/geocode?address=Times Square, New York`
+3. Set header: `Authorization: Bearer <token>` (use user or captain token)
+4. Send the request
+
+#### Get Distance and Time
+1. Set method to `GET`
+2. Set URL to `http://localhost:4000/api/maps/distance-time?origin=Times Square, New York&destination=Central Park, New York`
+3. Set header: `Authorization: Bearer <token>` (use user or captain token)
+4. Send the request
+
+#### Get Place Suggestions
+1. Set method to `GET`
+2. Set URL to `http://localhost:4000/api/maps/suggestions?input=New York`
+3. Set header: `Authorization: Bearer <token>` (use user or captain token)
+4. Send the request
+
+### Ride Management Testing
+
+#### Create Ride
+1. Set method to `POST`
+2. Set URL to `http://localhost:4000/api/rides/create`
+3. Set header: `Authorization: Bearer <token>` (use user token)
+4. Set header: `Content-Type: application/json`
+5. Set body to raw JSON:
+   ```json
+   {
+     "pickup": "Times Square, New York, NY, USA",
+     "dropoff": "Central Park, New York, NY, USA",
+     "vehicleType": "car"
+   }
+   ```
+6. Send the request
+
+## API Usage Guidelines
+
+### Google Maps API Integration
+- All Maps API endpoints require user authentication to prevent unauthorized usage
+- The application uses GoMaps.pro service (Google Maps API alternative)
+- Ensure your API key has the following services enabled:
+  - Geocoding API (for address to coordinates conversion)
+  - Distance Matrix API (for distance and duration calculations)
+  - Places API (for autocomplete suggestions)
+
+### Rate Limiting Considerations
+- Implement client-side caching for frequently requested locations
+- Use debouncing for autocomplete suggestions to minimize API calls
+- Consider implementing server-side caching for popular routes and locations
+
+### Best Practices
+- Always validate user input before making API calls
+- Handle API errors gracefully and provide meaningful error messages
+- Implement retry logic for transient API failures
+- Monitor API usage and costs regularly
+
+## Fare Calculation System
+
+The ride service implements a dynamic fare calculation system based on distance, duration, and vehicle type. The system integrates with Google Maps API to get accurate distance and time estimates.
+
+### Vehicle Types and Rates
+
+| Vehicle Type | Base Fare (₹) | Per KM (₹) | Per Minute (₹) |
+|--------------|---------------|------------|----------------|
+| Auto | 25 | 12 | 2 |
+| Car | 50 | 15 | 3 |
+| Motorcycle/Bike | 20 | 8 | 1.5 |
+
+### Fare Calculation Formula
+```
+Total Fare = Base Fare + (Distance in KM × Per KM Rate) + (Duration in Minutes × Per Minute Rate)
+```
+
+### Features
+- Automatic distance and duration calculation using Google Maps Distance Matrix API
+- Support for multiple distance units (km, m) and duration units (hours, minutes, seconds)
+- Intelligent parsing of Google Maps API responses
+- Fallback to default vehicle rates if invalid vehicle type is provided
+- Fare rounded to 2 decimal places for accuracy
 
 ## Error Handling
 
