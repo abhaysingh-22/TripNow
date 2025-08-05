@@ -8,6 +8,7 @@ import connectToDB from './db/db.js';
 import userRoutes from './routes/user.routes.js';
 import captainRoutes from './routes/captain.routes.js';
 import mapsRoutes from './routes/maps.routes.js';
+import rideRoutes from './routes/ride.routes.js';
 
 // Connect to database (non-blocking)
 connectToDB().catch(err => {
@@ -26,6 +27,7 @@ app.use(cookieParser()); // Middleware to parse cookies
 app.use('/api/users', userRoutes);
 app.use('/api/captains', captainRoutes);
 app.use('/api/maps', mapsRoutes);
+app.use('/api/rides', rideRoutes);
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
