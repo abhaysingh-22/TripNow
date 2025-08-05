@@ -10,6 +10,7 @@ import {
 } from "@heroicons/react/24/solid";
 import { CurrencyRupeeIcon, UserIcon } from "@heroicons/react/24/outline";
 import toast, { Toaster } from "react-hot-toast";
+import axios from "axios";
 import mapVideo from "../assets/maps.mp4";
 import LocationSearchPanel from "../components/LocationSearchPanel";
 import ConfirmRide from "../components/ConfirmRide";
@@ -18,6 +19,7 @@ import WaitingForDriver from "../components/WaitingForDriver";
 import Riding from "./Riding";
 import LoadingScreen from "../components/LoadingScreen";
 import VehiclePanel from "../components/VehiclePanel";
+import DebugSuggestions from "../components/DebugSuggestions";
 
 function Home() {
   const [pickup, setPickup] = useState("");
@@ -42,6 +44,179 @@ function Home() {
   const [fareCheckDestination, setFareCheckDestination] = useState("");
   const [fareCheckSelectedRide, setFareCheckSelectedRide] = useState(null); // New state for fare checking vehicle selection
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [suggestions, setSuggestions] = useState([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestionInputValue, setSuggestionInputValue] = useState("");
+
+  // API Configuration
+  const API_BASE_URL = "http://localhost:3000/api";
+
+  // Get token from localStorage, sessionStorage, or cookies
+  const getAuthToken = () => {
+    // Try localStorage first
+    let token = localStorage.getItem("token");
+
+    // Try sessionStorage if not in localStorage
+    if (!token) {
+      token = sessionStorage.getItem("token");
+    }
+
+    // Try cookies if not in storage
+    if (!token) {
+      const cookies = document.cookie.split(";");
+      const tokenCookie = cookies.find((cookie) =>
+        cookie.trim().startsWith("token=")
+      );
+      if (tokenCookie) {
+        token = tokenCookie.split("=")[1];
+      }
+    }
+
+    // For debugging purposes - Add a test token if none found
+    if (!token) {
+      console.warn("No token found, using test token for debugging");
+      // You should replace this with actual login functionality
+      token = "test-token-for-debugging";
+    }
+
+    return token || "";
+  };
+
+  // Debounce function for API calls
+  const debounce = (func, wait) => {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  };
+
+  // Fetch suggestions from backend
+  const fetchSuggestions = async (input) => {
+    console.log("fetchSuggestions called with input:", input);
+
+    if (!input || input.trim().length < 2) {
+      console.log("Input too short, clearing suggestions");
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    setIsLoadingSuggestions(true);
+    console.log("Starting to fetch suggestions...");
+
+    try {
+      const token = getAuthToken();
+      console.log("Token found:", !!token);
+
+      if (!token) {
+        console.log("No token found");
+        toast.error("Please login to search locations");
+        setSuggestions([]);
+        setShowSuggestions(false);
+        setIsLoadingSuggestions(false);
+        return;
+      }
+
+      console.log("Making API call to:", `${API_BASE_URL}/maps/suggestions`);
+      const response = await axios.get(`${API_BASE_URL}/maps/suggestions`, {
+        params: { input: input.trim() },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        timeout: 10000, // 10 second timeout
+      });
+
+      console.log("API response status:", response.status);
+      console.log("API response:", response.data);
+
+      if (response.data && Array.isArray(response.data)) {
+        console.log("Setting suggestions:", response.data.length, "items");
+        setSuggestions(response.data);
+        setShowSuggestions(response.data.length > 0);
+      } else {
+        console.log("Invalid response format:", response.data);
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
+    } catch (error) {
+      console.error("Error fetching suggestions:", error);
+      console.error("Error details:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        code: error.code,
+      });
+
+      if (error.code === "ECONNABORTED") {
+        toast.error("Request timeout. Please try again.");
+      } else if (error.response?.status === 401) {
+        toast.error("Please login to search locations");
+      } else if (error.response?.status === 429) {
+        toast.error("Too many requests. Please wait a moment.");
+      } else if (error.response?.status >= 500) {
+        toast.error("Server error. Please try again later.");
+      } else if (!navigator.onLine) {
+        toast.error("Please check your internet connection");
+      } else {
+        toast.error(`Failed to fetch location suggestions: ${error.message}`);
+      }
+
+      setSuggestions([]);
+      setShowSuggestions(false);
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  };
+
+  // Debounced version of fetchSuggestions
+  const debouncedFetchSuggestions = debounce(fetchSuggestions, 300);
+
+  // Handle input change for pickup/destination fields
+  const handleInputChange = (value, inputType) => {
+    console.log("handleInputChange called:", { value, inputType });
+    setSuggestionInputValue(value);
+    setActiveInput(inputType);
+
+    if (inputType === "pickup") {
+      setPickup(value);
+    } else {
+      setDestination(value);
+    }
+
+    // Fetch suggestions with debouncing
+    debouncedFetchSuggestions(value);
+  };
+
+  // Handle suggestion selection
+  const handleSuggestionSelect = (suggestion) => {
+    const selectedLocation = suggestion.description || suggestion.name;
+
+    if (activeInput === "pickup") {
+      setPickup(selectedLocation);
+    } else {
+      setDestination(selectedLocation);
+    }
+
+    // Clear suggestions
+    setSuggestions([]);
+    setShowSuggestions(false);
+    setSuggestionInputValue("");
+  };
+
+  // Handle panel close with cleanup
+  const handlePanelClose = () => {
+    setIsSidePanelOpen(false);
+    setSuggestions([]);
+    setShowSuggestions(false);
+    setSuggestionInputValue("");
+  };
 
   const panelVariants = {
     mobile: {
@@ -266,7 +441,7 @@ function Home() {
     setSelectedPaymentMethod(null);
     setShowConfirmRide(false);
     setSelectedVehicle(null);
-    setIsSidePanelOpen(false);
+    handlePanelClose();
     setShowRideOptions(false);
     setPickup("");
     setDestination("");
@@ -297,12 +472,38 @@ function Home() {
     };
   }, [driverSearchTimeout]);
 
+  // Clear suggestions when panel is closed
+  useEffect(() => {
+    if (!isSidePanelOpen) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      setSuggestionInputValue("");
+    }
+  }, [isSidePanelOpen]);
+
+  // Handle clicking outside suggestions to close them
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showSuggestions && !event.target.closest(".suggestions-container")) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showSuggestions]);
+
   if (isInitialLoading) {
     return <LoadingScreen />;
   }
 
   return (
     <div className="h-screen w-full overflow-hidden fixed inset-0">
+      {/* Debug Component - Remove in production */}
+      <DebugSuggestions />
+
       {showRiding ? (
         <Riding
           selectedVehicle={selectedVehicle}
@@ -401,7 +602,7 @@ function Home() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                onClick={() => setIsSidePanelOpen(false)}
+                onClick={() => handlePanelClose()}
                 className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden"
               />
             )}
@@ -478,7 +679,7 @@ function Home() {
                         )}
                         <motion.button
                           whileTap={{ scale: 0.95 }}
-                          onClick={() => setIsSidePanelOpen(false)}
+                          onClick={() => handlePanelClose()}
                           className="p-2"
                         >
                           <XMarkIcon className="w-6 h-6" />
@@ -494,7 +695,7 @@ function Home() {
                       <div className="px-4 pb-4">
                         <form onSubmit={submitHandler} className="space-y-4">
                           <motion.div
-                            className="relative"
+                            className="relative suggestions-container"
                             whileFocus={{ scale: 1.02 }}
                           >
                             <MapPinIcon className="absolute left-3 top-3 w-5 h-5 text-blue-500" />
@@ -503,18 +704,49 @@ function Home() {
                               placeholder="Pickup Location"
                               value={hasActiveRide ? fareCheckPickup : pickup}
                               onChange={(e) => {
+                                const value = e.target.value;
                                 if (hasActiveRide) {
-                                  setFareCheckPickup(e.target.value);
+                                  setFareCheckPickup(value);
                                 } else {
-                                  setPickup(e.target.value);
+                                  handleInputChange(value, "pickup");
                                 }
                               }}
-                              onFocus={() => setActiveInput("pickup")}
+                              onFocus={() => {
+                                setActiveInput("pickup");
+                                setIsSidePanelOpen(true);
+                              }}
                               className="pl-10 pr-4 py-3 w-full border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                             />
+                            
+                            {/* Suggestions for pickup input */}
+                            {activeInput === "pickup" && showSuggestions && suggestions.length > 0 && (
+                              <div className="absolute left-0 right-0 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto z-[1000]">
+                                {suggestions.slice(0, 5).map((suggestion, index) => (
+                                  <div
+                                    key={suggestion.place_id || index}
+                                    onClick={() => handleSuggestionSelect(suggestion)}
+                                    className="flex items-start p-3 cursor-pointer border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors duration-150"
+                                  >
+                                    <MapPinIcon className="w-4 h-4 text-gray-400 mt-1 mr-3 flex-shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="text-sm font-medium text-gray-900 truncate">
+                                        {suggestion.structured_formatting?.main_text || 
+                                         suggestion.description?.split(',')[0] || 
+                                         'Unknown Location'}
+                                      </div>
+                                      <div className="text-xs text-gray-500 truncate">
+                                        {suggestion.structured_formatting?.secondary_text || 
+                                         suggestion.description || 
+                                         'No address available'}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </motion.div>
 
-                          <motion.div className="relative">
+                          <motion.div className="relative suggestions-container">
                             <ArrowRightIcon className="absolute left-3 top-3 w-5 h-5 text-blue-500" />
                             <input
                               type="text"
@@ -525,15 +757,46 @@ function Home() {
                                   : destination
                               }
                               onChange={(e) => {
+                                const value = e.target.value;
                                 if (hasActiveRide) {
-                                  setFareCheckDestination(e.target.value);
+                                  setFareCheckDestination(value);
                                 } else {
-                                  setDestination(e.target.value);
+                                  handleInputChange(value, "destination");
                                 }
                               }}
-                              onFocus={() => setActiveInput("destination")}
+                              onFocus={() => {
+                                setActiveInput("destination");
+                                setIsSidePanelOpen(true);
+                              }}
                               className="pl-10 pr-4 py-3 w-full border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                             />
+                            
+                            {/* Suggestions for destination input */}
+                            {activeInput === "destination" && showSuggestions && suggestions.length > 0 && (
+                              <div className="absolute left-0 right-0 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto z-[1000]">
+                                {suggestions.slice(0, 5).map((suggestion, index) => (
+                                  <div
+                                    key={suggestion.place_id || index}
+                                    onClick={() => handleSuggestionSelect(suggestion)}
+                                    className="flex items-start p-3 cursor-pointer border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors duration-150"
+                                  >
+                                    <MapPinIcon className="w-4 h-4 text-gray-400 mt-1 mr-3 flex-shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="text-sm font-medium text-gray-900 truncate">
+                                        {suggestion.structured_formatting?.main_text || 
+                                         suggestion.description?.split(',')[0] || 
+                                         'Unknown Location'}
+                                      </div>
+                                      <div className="text-xs text-gray-500 truncate">
+                                        {suggestion.structured_formatting?.secondary_text || 
+                                         suggestion.description || 
+                                         'No address available'}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </motion.div>
 
                           <motion.button
@@ -632,8 +895,17 @@ function Home() {
                             ? setFareCheckDestination
                             : setDestination
                         }
+                        pickup={hasActiveRide ? fareCheckPickup : pickup}
+                        destination={
+                          hasActiveRide ? fareCheckDestination : destination
+                        }
                         activeInput={activeInput}
                         hasActiveRide={hasActiveRide}
+                        suggestions={suggestions}
+                        isLoadingSuggestions={isLoadingSuggestions}
+                        showSuggestions={showSuggestions}
+                        onSuggestionSelect={handleSuggestionSelect}
+                        onInputChange={handleInputChange}
                       />
                     )
                   )}
