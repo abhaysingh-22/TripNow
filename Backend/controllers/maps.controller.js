@@ -38,19 +38,25 @@ const getDistanceTime = async (req, res, next) => {
 };
 
 const getSuggestions = async (req, res, next) => {
+    console.log('getSuggestions called with:', req.query);
+    
     // Validate request parameters
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+        console.log('Validation errors:', errors.array());
         return res.status(400).json({ errors: errors.array() });
     }
 
     const { input } = req.query;
+    console.log('Processing input:', input);
 
     try {
-        // Call the service to get suggestions
+        console.log('Calling Google Maps API for suggestions...');
         const suggestions = await mapsService.getSuggestions(input);
+        console.log('Google Maps API success! Got suggestions:', suggestions?.length || 0, 'items');
         return res.status(200).json(suggestions);
     } catch (error) {
+        console.error('Error in getSuggestions:', error.message);
         return res.status(500).json({ error: error.message });
     }
 };
