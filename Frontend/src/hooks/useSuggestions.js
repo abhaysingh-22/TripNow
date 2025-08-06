@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 import { useAuth } from "./useAuth";
 
 // API Configuration
-const API_BASE_URL = "http://localhost:3000/api";
+const API_BASE_URL = `${import.meta.env.VITE_BASE_URL}/api`;
 
 // Utility function for debouncing
 const debounce = (func, wait) => {
@@ -45,21 +45,23 @@ export const useSuggestions = () => {
         console.log("Token found:", !!token);
 
         if (!token) {
-          console.log("No token found");
-          toast.error("Please login to search locations");
-          setSuggestions([]);
-          setShowSuggestions(false);
-          setIsLoadingSuggestions(false);
-          return;
+          console.warn("No token found - proceeding without authentication for testing");
+          // We'll still make the API call but handle 401 errors gracefully
+        }
+
+        const requestHeaders = {
+          "Content-Type": "application/json",
+        };
+        
+        // Only add Authorization header if token exists
+        if (token) {
+          requestHeaders.Authorization = `Bearer ${token}`;
         }
 
         console.log("Making API call to:", `${API_BASE_URL}/maps/suggestions`);
         const response = await axios.get(`${API_BASE_URL}/maps/suggestions`, {
           params: { input: input.trim() },
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
+          headers: requestHeaders,
           timeout: 10000,
         });
 
