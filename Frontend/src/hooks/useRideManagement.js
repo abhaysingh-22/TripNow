@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import toast from "react-hot-toast";
+import { useFareCalculation } from "./useFareCalculation";
 
 export const useRideManagement = () => {
   // Ride-related states
@@ -15,6 +16,9 @@ export const useRideManagement = () => {
   const [showRiding, setShowRiding] = useState(false);
   const [hasActiveRide, setHasActiveRide] = useState(false);
   const [fareCheckSelectedRide, setFareCheckSelectedRide] = useState(null);
+
+  // Fare calculation hook
+  const { fares, isLoadingFares, calculateFares, clearFares, getFareForRide } = useFareCalculation();
 
   // Ride types data
   const rideTypes = [
@@ -76,12 +80,21 @@ export const useRideManagement = () => {
       }
 
       setIsSearching(true);
-      setTimeout(() => {
-        setIsSearching(false);
-        setShowRideOptions(true);
-      }, 2000);
+      
+      // Calculate fares for all vehicle types
+      calculateFares(currentPickup, currentDestination, rideTypes).then(() => {
+        setTimeout(() => {
+          setIsSearching(false);
+          setShowRideOptions(true);
+        }, 2000);
+      }).catch(() => {
+        setTimeout(() => {
+          setIsSearching(false);
+          setShowRideOptions(true);
+        }, 2000);
+      });
     },
-    [hasActiveRide]
+    [hasActiveRide, calculateFares, rideTypes]
   );
 
   // Confirm ride booking
@@ -150,7 +163,8 @@ export const useRideManagement = () => {
     setShowRideOptions(false);
     setSelectedRide(null);
     setFareCheckSelectedRide(null);
-  }, []);
+    clearFares();
+  }, [clearFares]);
 
   const handleBackToRides = useCallback(() => {
     setShowConfirmRide(false);
@@ -197,6 +211,11 @@ export const useRideManagement = () => {
     hasActiveRide,
     fareCheckSelectedRide,
     rideTypes,
+    
+    // Fare-related states and functions
+    fares,
+    isLoadingFares,
+    getFareForRide,
 
     // Handlers
     submitHandler,
