@@ -9,6 +9,9 @@ function VehiclePanel({
   fareCheckSelectedRide, 
   hasActiveRide, 
   isPanelMinimized, 
+  fares,
+  isLoadingFares,
+  getFareForRide,
   onVehicleSelect, 
   onBackToLocations,
   onConfirmPickup 
@@ -31,56 +34,86 @@ function VehiclePanel({
           >
             <ArrowLeftIcon className="w-5 h-5" />
           </motion.button>
-          <h3 className="text-lg font-semibold">
-            {hasActiveRide ? "Check Fares" : "Choose a Ride"}
-          </h3>
+          <div>
+            <h3 className="text-lg font-semibold">
+              {hasActiveRide ? "Check Fares" : "Choose a Ride"}
+            </h3>
+            {!hasActiveRide && !isLoadingFares && (
+              <p className="text-xs text-gray-500">Real-time pricing based on your route</p>
+            )}
+          </div>
         </div>
       </div>
       
       <div className={`flex-1 ${isPanelMinimized ? '' : 'overflow-y-auto'}`}>
         <div className={`space-y-4 ${isPanelMinimized ? 'pb-8' : 'pb-16'}`}>
-          {rideTypes.map((ride) => (
-            <motion.div
-              key={ride.id}
-              onClick={() => onVehicleSelect(ride)}
-              className={`flex items-center p-3 rounded-xl cursor-pointer transition-all duration-200 ${
-                (hasActiveRide ? fareCheckSelectedRide : selectedRide) === ride.id
-                  ? hasActiveRide 
-                    ? "bg-blue-50 border-2 border-blue-200" 
-                    : "bg-gray-100 border-3 border-black"
-                  : "border-2 border-gray-200 hover:bg-gray-50"
-              } ${hasActiveRide ? 'relative' : ''}`}
-            >
-              {hasActiveRide && (
-                <div className="absolute top-2 right-2">
-                  <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
-                    View Only
-                  </span>
-                </div>
-              )}
-              
-              <img
-                src={ride.image}
-                alt={ride.name}
-                className="w-20 h-12 object-contain"
-              />
-              <div className="flex-1 ml-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold">{ride.name}</p>
-                    <div className="flex items-center text-sm text-gray-500">
-                      <UserIcon className="w-4 h-4 mr-1" />
-                      <span>{ride.persons}</span>
+          {rideTypes.map((ride) => {
+            const fareData = getFareForRide ? getFareForRide(ride.id) : null;
+            const displayPrice = fareData && fareData.fare && !fareData.error 
+              ? `₹${fareData.fare}` 
+              : ride.price;
+            
+            return (
+              <motion.div
+                key={ride.id}
+                onClick={() => onVehicleSelect(ride)}
+                className={`flex items-center p-3 rounded-xl cursor-pointer transition-all duration-200 ${
+                  (hasActiveRide ? fareCheckSelectedRide : selectedRide) === ride.id
+                    ? hasActiveRide 
+                      ? "bg-blue-50 border-2 border-blue-200" 
+                      : "bg-gray-100 border-3 border-black"
+                    : "border-2 border-gray-200 hover:bg-gray-50"
+                } ${hasActiveRide ? 'relative' : ''}`}
+              >
+                {hasActiveRide && (
+                  <div className="absolute top-2 right-2">
+                    <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
+                      View Only
+                    </span>
+                  </div>
+                )}
+                
+                <img
+                  src={ride.image}
+                  alt={ride.name}
+                  className="w-20 h-12 object-contain"
+                />
+                <div className="flex-1 ml-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold">{ride.name}</p>
+                      <div className="flex items-center text-sm text-gray-500">
+                        <UserIcon className="w-4 h-4 mr-1" />
+                        <span>{ride.persons}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="flex items-center">
+                        {isLoadingFares ? (
+                          <div className="flex items-center">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
+                            <span className="text-sm text-gray-500">Calculating...</span>
+                          </div>
+                        ) : (
+                          <>
+                            <p className={`font-semibold ${fareData && !fareData.error ? 'text-green-600' : ''}`}>
+                              {displayPrice}
+                            </p>
+                            {/* {fareData && !fareData.error && (
+                              <span className="ml-2 text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">
+                                Live
+                              </span>
+                            )} */}
+                          </>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-500">{ride.time}</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold">{ride.price}</p>
-                    <p className="text-sm text-gray-500">{ride.time}</p>
-                  </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
       </div>
 
