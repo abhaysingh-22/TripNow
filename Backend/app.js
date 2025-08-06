@@ -24,17 +24,22 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));   // urlencoded is used to parse form data this is basically a middleware
 app.use(cookieParser()); // Middleware to parse cookies
 
+// Debug middleware to log all requests
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  console.log('Query params:', req.query);
+  console.log('Body:', req.body);
+  console.log('---');
+  next();
+});
+
 app.use('/api/users', userRoutes);
 app.use('/api/captains', captainRoutes);
 app.use('/api/maps', mapsRoutes);
-app.use('/api/rides', rideRoutes);
+app.use('/api/ride', rideRoutes);
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
-});
-
-app.get('/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Server is running' });
 });
 
 export default app;
