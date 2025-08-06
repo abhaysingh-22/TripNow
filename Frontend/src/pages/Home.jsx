@@ -97,6 +97,9 @@ function Home() {
     hasActiveRide,
     fareCheckSelectedRide,
     rideTypes,
+    fares,
+    isLoadingFares,
+    getFareForRide,
     submitHandler,
     confirmRide,
     handleVehicleSelect,
@@ -399,6 +402,9 @@ function Home() {
                     fareCheckSelectedRide={fareCheckSelectedRide}
                     hasActiveRide={hasActiveRide}
                     isPanelMinimized={isPanelMinimized}
+                    fares={fares}
+                    isLoadingFares={isLoadingFares}
+                    getFareForRide={getFareForRide}
                     onVehicleSelect={handleVehicleSelect}
                     onBackToLocations={handleBackToLocationForm}
                     onConfirmPickup={handleConfirmPickup}
