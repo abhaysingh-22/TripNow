@@ -20,13 +20,8 @@ export const useAuth = () => {
       }
     }
 
-    // For debugging purposes - Add a test token if none found
-    if (!token) {
-      console.warn("No token found, using test token for debugging");
-      token = "test-token-for-debugging";
-    }
-
-    return token || "";
+    // Return null if no token is found (don't use test token)
+    return token;
   };
 
   return { getAuthToken };
