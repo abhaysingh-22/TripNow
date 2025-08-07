@@ -14,6 +14,7 @@ function WaitingForDriver({
   selectedVehicle, 
   pickup, 
   destination, 
+  fare,
   selectedPayment, 
   onBack, 
   onCancel 
@@ -199,7 +200,7 @@ function WaitingForDriver({
               </div>
             </div>
             <div className="text-right">
-              <span className="font-bold text-lg">{selectedVehicle.price}</span>
+              <span className="font-bold text-lg">{fare !== undefined ? `₹${fare}` : "—"}</span>
               <p className={`text-xs ${
                 selectedPayment === 'cash' ? 'text-yellow-600' : 'text-green-600'
               }`}>
