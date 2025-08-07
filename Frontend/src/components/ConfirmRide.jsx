@@ -11,6 +11,7 @@ function ConfirmRide({
   selectedVehicle,
   pickup,
   destination,
+  fare,
   onBack,
   onConfirm,
 }) {
@@ -64,7 +65,7 @@ function ConfirmRide({
                   </div>
                 </div>
                 <span className="text-xl font-bold">
-                  {selectedVehicle.price}
+                  {fare !== undefined ? `₹${fare}` : "—"}
                 </span>
               </div>
             </div>
@@ -107,7 +108,7 @@ function ConfirmRide({
                     {method.charAt(0).toUpperCase() + method.slice(1)}
                   </span>
                 </div>
-                <span className="font-bold">{selectedVehicle.price}</span>
+                <span className="font-bold">{fare !== undefined ? `₹${fare}` : "—"}</span>
               </motion.button>
             ))}
           </div>
