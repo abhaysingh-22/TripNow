@@ -8,7 +8,7 @@ import {
 
 function LoadingScreen() {
   return (
-    <div className="h-screen w-full flex flex-col items-center justify-center bg-black relative overflow-hidden">
+    <div className="fixed inset-0 w-full h-full flex flex-col items-center justify-center bg-black overflow-hidden z-50">
       {/* Animated Background Gradient */}
       <motion.div
         className="absolute inset-0 bg-[#000000]"
