@@ -27,6 +27,10 @@ const captainSchema = new moongoose.Schema({
     type: String,
     required: false,
   },
+  role: {
+    type: String,
+    default: "captain", // Default role is "captain"
+  },
 
   status: {
     type: String,
