@@ -1,10 +1,12 @@
 // CaptainHome.jsx - Main dashboard for captain to manage rides and status
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useContext } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import mapVideo from "../assets/maps.mp4";
 import CaptainDetails from "../components/CaptainDetails";
 import RidePopup from "../components/RidePopup";
 import ConfirmRidePopup from "../components/ConfirmRidePopup";
+import { useSocket } from "../context/SocketContext.jsx";
+import { CaptainContext } from "../context/CaptainContext.jsx";
 
 const CaptainHome = () => {
   // UI State Management
@@ -16,6 +18,32 @@ const CaptainHome = () => {
 
   // Video reference for zoom functionality
   const videoRef = useRef(null);
+
+  const { captain } = useContext(CaptainContext);
+  const { onMessage, sendMessage } = useSocket();
+
+  useEffect(() => {
+    // Listen for ride requests from users
+    const cleanup = onMessage("ride-request", (data) => {
+      sendMessage("ride-request", {
+        userId: captain._id,
+        role: "captain",
+      });
+      // data will contain ride details sent by the user
+      setRideData(data); // or update your state as needed
+      setShowRideRequest(true);
+    });
+    return cleanup;
+  }, [onMessage]);
+
+  useEffect(() => {
+    if (captain && sendMessage) {
+      sendMessage("join", {
+        userId: captain._id,
+        role: captain.role, // "user" or "captain"
+      });
+    }
+  }, [captain, sendMessage]);
 
   // Captain online/offline status with localStorage persistence
   // This ensures status survives page refreshes
@@ -89,12 +117,16 @@ const CaptainHome = () => {
   // Ride Management Handlers
   const handleAcceptRide = (rideId) => {
     console.log(`Accepted ride: ${rideId}`);
+    // Send response to user
+    sendMessage("ride-response", { rideId, status: "accepted" });
     setShowRideRequest(false);
     setShowConfirmRide(true);
   };
 
   const handleIgnoreRide = (rideId) => {
     console.log(`Ignored ride: ${rideId}`);
+    // Send response to user
+    sendMessage("ride-response", { rideId, status: "rejected" });
     setShowRideRequest(false);
   };
 
