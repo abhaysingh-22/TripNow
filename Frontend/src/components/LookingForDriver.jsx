@@ -12,6 +12,7 @@ function LookingForDriver({
   selectedVehicle, 
   pickup, 
   destination, 
+  fare,
   selectedPayment, 
   onBack, 
   onCancel 
@@ -148,7 +149,7 @@ function LookingForDriver({
                 <span className="text-sm">{selectedVehicle.time}</span>
               </div>
             </div>
-            <span className="text-2xl font-bold">{selectedVehicle.price}</span>
+            <span className="text-2xl font-bold">{fare !== undefined ? `₹${fare}` : "—"}</span>
           </div>
         </div>
 
@@ -184,7 +185,7 @@ function LookingForDriver({
               )}
               <span className="font-medium capitalize">{selectedPayment || "Not selected"}</span>
             </div>
-            <span className="font-bold">{selectedVehicle.price}</span>
+            <span className="font-bold">{fare !== undefined ? `₹${fare}` : "—"}</span>
           </div>
         </div>
 
