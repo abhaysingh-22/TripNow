@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useContext } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
+import { SocketProvider, useSocket } from "../context/SocketContext.jsx";
+import { UserContext } from "../context/UserContext.jsx";
 
 // Components
 import LocationSearchPanel from "../components/LocationSearchPanel";
@@ -62,6 +64,18 @@ const formVariants = {
 };
 
 function Home() {
+  const { sendMessage, onMessage } = useSocket();
+  const { user } = useContext(UserContext);
+
+  useEffect(() => {
+    if (user && sendMessage) {
+      sendMessage("join", {
+        userId: user._id,
+        role: "user",
+      });
+    }
+  }, [user, sendMessage]);
+
   // Basic UI states
   const [pickup, setPickup] = useState("");
   const [destination, setDestination] = useState("");
@@ -374,6 +388,7 @@ function Home() {
                     selectedVehicle={selectedVehicle}
                     pickup={pickup}
                     destination={destination}
+                    fare={getFareForRide(selectedVehicle?.id)?.fare}
                     selectedPayment={selectedPaymentMethod}
                     onBack={() => setShowWaitingForDriver(false)}
                     onCancel={handleCancelWaiting}
@@ -383,6 +398,7 @@ function Home() {
                     selectedVehicle={selectedVehicle}
                     pickup={pickup}
                     destination={destination}
+                    fare={getFareForRide(selectedVehicle?.id)?.fare}
                     selectedPayment={selectedPaymentMethod}
                     onBack={() => setShowLookingForDriver(false)}
                     onCancel={handleCancelLooking}
@@ -392,6 +408,7 @@ function Home() {
                     selectedVehicle={selectedVehicle}
                     pickup={pickup}
                     destination={destination}
+                    fare={getFareForRide(selectedVehicle?.id)?.fare}
                     onBack={handleBackToRides}
                     onConfirm={confirmRide}
                   />
