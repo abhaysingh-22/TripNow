@@ -40,3 +40,8 @@ server.on("error", (error) => {
       throw error;
   }
 });
+
+process.on("SIGINT", () => {
+  console.log("Shutting down server...");
+  process.exit();
+});
