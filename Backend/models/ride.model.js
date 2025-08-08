@@ -9,7 +9,7 @@ const rideSchema = new Schema({
   },
   captainId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Driver",
+    ref: "Captain",
   },
   pickupLocation: {
     type: String,
