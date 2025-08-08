@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
+import Captain from "../models/captain.model.js";
 
 // Get the directory of the current module
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -13,7 +14,6 @@ import axios from "axios";
  * @param {string} address - The address to geocode.
  * @returns {Promise<{ latitude: number, longitude: number }>} - Coordinates object.
  */
-
 
 async function getCoordinates(address) {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
@@ -68,10 +68,9 @@ async function getCoordinates(address) {
 // }
 
 async function getDistanceTime(origin, destination) {
-
-    if (!origin || !destination) {
-      throw new Error("Origin and destination must be provided.");
-    }
+  if (!origin || !destination) {
+    throw new Error("Origin and destination must be provided.");
+  }
 
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   if (!apiKey) {
@@ -105,7 +104,6 @@ async function getDistanceTime(origin, destination) {
 }
 
 async function getSuggestions(input) {
-
   if (!input || typeof input !== "string" || input.trim() === "") {
     throw new Error("Input must be a non-empty string.");
   }
@@ -132,8 +130,85 @@ async function getSuggestions(input) {
   }
 }
 
+async function getCaptainsInRadius(latitude, longitude, radius) {
+  if (!latitude || !longitude || !radius) {
+    throw new Error("Latitude, longitude, and radius must be provided.");
+  }
+
+  try {
+    console.log("=== DEBUGGING CAPTAIN SEARCH ===");
+    console.log("Search center:", { latitude, longitude });
+    console.log("Search radius:", radius, "km");
+
+    // Get all captains (without geospatial query)
+    const allCaptains = await Captain.find({
+      "location.latitude": { $exists: true },
+      "location.longitude": { $exists: true },
+    });
+
+    console.log("All captains found:", allCaptains.length);
+    
+    // Log each captain's location
+    allCaptains.forEach((captain, index) => {
+      console.log(`Captain ${index + 1} (${captain._id}):`);
+      console.log(`  Location: lat=${captain.location.latitude}, lng=${captain.location.longitude}`);
+      console.log(`  Name: ${captain.fullName || 'N/A'}`);
+    });
+
+    // Filter by distance manually using Haversine formula
+    const captainsInRadius = allCaptains.filter((captain, index) => {
+      if (
+        !captain.location ||
+        !captain.location.latitude ||
+        !captain.location.longitude
+      ) {
+        console.log(`Captain ${index + 1}: SKIPPED - Missing location data`);
+        return false;
+      }
+
+      const distance = calculateDistance(
+        latitude,
+        longitude,
+        captain.location.latitude,
+        captain.location.longitude
+      );
+
+      console.log(`Captain ${index + 1} (${captain._id}):`);
+      console.log(`  Distance: ${distance.toFixed(2)}km`);
+      console.log(`  Within radius (${radius}km)?: ${distance <= radius ? 'YES' : 'NO'}`);
+      
+      return distance <= radius;
+    });
+
+    console.log("=== SEARCH RESULTS ===");
+    console.log("Captains in radius:", captainsInRadius.length);
+    console.log("================================");
+    
+    return captainsInRadius;
+
+  } catch (error) {
+    console.error("Error in getCaptainsInRadius:", error);
+    throw error;
+  }
+}
+
+// Add this helper function for distance calculation 
+// we are doing manual calc because MongoDB can't execute the $geoNear query because there's no geospatial index on the location field.
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c; // Distance in kilometers
+}
+
 export default {
   getCoordinates,
   getDistanceTime,
   getSuggestions,
+  getCaptainsInRadius,
 };
