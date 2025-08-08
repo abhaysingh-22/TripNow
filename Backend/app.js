@@ -16,7 +16,7 @@ connectToDB().catch(err => {
 });
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: [process.env.FRONTEND_URL || 'http://localhost:3000', 'https://dt092cz3-5173.inc1.devtunnels.ms'],
   credentials: true
 }));
 
