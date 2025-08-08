@@ -40,7 +40,7 @@ const CaptainHome = () => {
     if (captain && sendMessage) {
       sendMessage("join", {
         userId: captain._id,
-        role: captain.role, // "user" or "captain"
+        role: "captain", // ✅ Hardcode the role instead of using captain.role
       });
     }
   }, [captain, sendMessage]);
@@ -51,6 +51,46 @@ const CaptainHome = () => {
     const saved = localStorage.getItem("captainOnlineStatus");
     return saved ? JSON.parse(saved) : true;
   });
+
+  useEffect(() => {
+    if (!isOnline || !captain || !sendMessage) return;
+
+    const updateLocation = () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((position) => {
+          console.log("Sending location update:", {
+            userId: captain._id,
+            location: {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            },
+          });
+          sendMessage("update-location-captain", {
+            userId: captain._id,
+            role: "captain", // ✅ Hardcode role
+            location: {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            },
+          });
+        });
+      }
+    };
+
+    const locationInterval = setInterval(updateLocation, 10000);
+    updateLocation(); // Send immediately on mount
+
+    return () => clearInterval(locationInterval);
+  }, [isOnline, captain, sendMessage]);
+
+  useEffect(() => {
+    const cleanup = onMessage("ride-request", (data) => {
+      console.log("Received ride request:", data); // ✅ Add console log
+      setRideData(data.ride || data); // ✅ Handle both data.ride and data
+      setShowRideRequest(true);
+    });
+    return cleanup;
+  }, [onMessage]);
 
   // Save captain status to localStorage whenever it changes
   useEffect(() => {
