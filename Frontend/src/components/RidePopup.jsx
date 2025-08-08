@@ -26,6 +26,16 @@ const RidePopup = ({ ride, onAccept, onIgnore }) => {
     },
   };
 
+  const safePickup = {
+    address: rideData.pickupLocation || rideData.pickup?.address || "Pickup Location",
+    time: rideData.pickup?.time || "2 min away"
+  };
+
+  const safeDestination = {
+    address: rideData.dropoffLocation || rideData.destination?.address || "Destination",
+    time: rideData.destination?.time || "15 min"
+  };
+
   const handleAccept = () => {
     if (onAccept) {
       onAccept(rideData.id);
@@ -62,15 +72,15 @@ const RidePopup = ({ ride, onAccept, onIgnore }) => {
               <div className="w-2 h-2 bg-green-500 absolute top-0 right-0 rounded-full border border-white"></div>
               <div className="h-12 w-12 rounded-full overflow-hidden border-2 border-white">
                 <img
-                  src={rideData.user.photo}
-                  alt={rideData.user.name}
+                  src={rideData.user?.photo || "https://randomuser.me/api/portraits/lego/1.jpg"}
+                  alt={rideData.user?.name || "User Photo"}
                   className="h-full w-full object-cover"
                 />
               </div>
             </motion.div>
             <div className="ml-3">
               <h3 className="font-bold text-white text-lg">
-                {rideData.user.name}
+                {rideData.user?.name || "Unknown User"}
               </h3>
               <div className="flex items-center">
                 <svg
@@ -81,7 +91,7 @@ const RidePopup = ({ ride, onAccept, onIgnore }) => {
                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                 </svg>
                 <span className="text-white text-sm ml-1">
-                  {rideData.user.rating}
+                  {rideData.user?.rating ?? "N/A"}
                 </span>
                 <div className="flex items-center ml-2 bg-white bg-opacity-20 px-2 py-0.5 rounded">
                   <svg
@@ -98,7 +108,7 @@ const RidePopup = ({ ride, onAccept, onIgnore }) => {
                     />
                   </svg>
                   <span className="text-white text-xs">
-                    {rideData.pickup.time}
+                    {safePickup.time}
                   </span>
                 </div>
               </div>
@@ -112,7 +122,7 @@ const RidePopup = ({ ride, onAccept, onIgnore }) => {
             transition={{ delay: 0.3 }}
           >
             <span className="text-white font-bold">
-              ${rideData.amount.toFixed(2)}
+              ${(rideData.amount || 0).toFixed(2)}
             </span>
           </motion.div>
         </div>
@@ -140,7 +150,7 @@ const RidePopup = ({ ride, onAccept, onIgnore }) => {
         >
           <div className="text-center px-4 py-2 bg-gray-50 rounded-lg flex-1 mx-1">
             <p className="text-gray-500 text-xs">Distance</p>
-            <p className="font-bold text-gray-800">{rideData.distance} km</p>
+            <p className="font-bold text-gray-800">{(rideData.distance || 0).toFixed(1)} km</p>
           </div>
 
           <div className="text-center px-4 py-2 bg-gray-50 rounded-lg flex-1 mx-1">
@@ -151,7 +161,7 @@ const RidePopup = ({ ride, onAccept, onIgnore }) => {
           <div className="text-center px-4 py-2 bg-gray-50 rounded-lg flex-1 mx-1">
             <p className="text-gray-500 text-xs">Earning</p>
             <p className="font-bold text-green-600">
-              ${rideData.amount.toFixed(2)}
+              ${(rideData.amount || 0).toFixed(2)}
             </p>
           </div>
         </motion.div>
@@ -192,10 +202,10 @@ const RidePopup = ({ ride, onAccept, onIgnore }) => {
             <div className="flex-1">
               <p className="text-gray-500 text-sm">Pickup Location</p>
               <p className="font-semibold text-gray-800">
-                {rideData.pickup.address}
+                {safePickup.address}
               </p>
               <p className="text-sm text-green-600 font-medium">
-                {rideData.pickup.time}
+                {safePickup.time}
               </p>
             </div>
           </div>
@@ -228,10 +238,10 @@ const RidePopup = ({ ride, onAccept, onIgnore }) => {
             <div className="flex-1">
               <p className="text-gray-500 text-sm">Destination</p>
               <p className="font-semibold text-gray-800">
-                {rideData.destination.address}
+                {safeDestination.address}
               </p>
               <p className="text-sm text-gray-600 font-medium">
-                Est. arrival: {rideData.destination.time}
+                Est. arrival: {safeDestination.time}
               </p>
             </div>
           </div>
