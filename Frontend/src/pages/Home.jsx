@@ -88,6 +88,9 @@ function Home() {
   const [fareCheckPickup, setFareCheckPickup] = useState("");
   const [fareCheckDestination, setFareCheckDestination] = useState("");
 
+  const [currentRide, setCurrentRide] = useState(null);
+  const [isSubmittingRide, setIsSubmittingRide] = useState(false);
+
   // Custom hooks
   const {
     suggestions,
@@ -128,6 +131,47 @@ function Home() {
   } = useRideManagement();
 
   // Input change handler
+
+  const handleCreateRide = useCallback(
+    async (selectedPayment) => {
+      if (!selectedPayment || !pickup || !destination) {
+        toast.error("Please select pickup, destination and vehicle");
+        return;
+      }
+
+      setIsSubmittingRide(true);
+      try {
+        const res = await fetch("/api/rides/create", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${user?.token || ""}`,
+          },
+          body: JSON.stringify({
+            pickup,
+            dropoff: destination,
+            vehicleType: selectedVehicle?.id || selectedVehicle?.type,
+            paymentMethod: selectedPayment || null,
+          }),
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to create ride");
+        }
+
+        const data = await res.json();
+        setCurrentRide(data.ride);
+        toast.success("Ride created successfully");
+      } catch (error) {
+        console.error("Create ride error:", error);
+        toast.error(error.message);
+      } finally {
+        setIsSubmittingRide(false);
+      }
+    },
+    [pickup, destination, selectedVehicle, user]
+  );
+
   const handleInputChange = useCallback(
     (value, inputType) => {
       console.log("handleInputChange called:", { value, inputType });
@@ -238,6 +282,27 @@ function Home() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showSuggestions, setShowSuggestions]);
+
+  useEffect(() => {
+    if (!onMessage) return;
+
+    // listen for server push updates about an active ride (distance/duration/eta etc.)
+    const cleanup = onMessage("ride-update", (data) => {
+      // data may be { rideId, distance, duration, ... } or full ride
+      const rideUpdate = data.ride || data;
+      const rideId = data.rideId || rideUpdate._id || rideUpdate.id;
+
+      setCurrentRide((prev) => {
+        if (!prev) return prev;
+        if (rideId && (prev._id === rideId || prev.id === rideId)) {
+          return { ...prev, ...rideUpdate };
+        }
+        return prev;
+      });
+    });
+
+    return cleanup;
+  }, [onMessage, setCurrentRide]);
 
   // Loading screen
   if (isInitialLoading) {
@@ -408,9 +473,11 @@ function Home() {
                     selectedVehicle={selectedVehicle}
                     pickup={pickup}
                     destination={destination}
-                    fare={getFareForRide(selectedVehicle?.id)?.fare}
+                    fare={getFareForRide(selectedVehicle?.id)}
                     onBack={handleBackToRides}
-                    onConfirm={confirmRide}
+                    onConfirm={handleCreateRide}
+                    submitting={isSubmittingRide}
+                    rideResult={currentRide}
                   />
                 ) : (
                   <VehiclePanel
