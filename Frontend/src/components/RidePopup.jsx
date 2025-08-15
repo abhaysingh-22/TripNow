@@ -6,7 +6,7 @@ const RidePopup = ({ ride, onAccept, onIgnore }) => {
   const navigate = useNavigate();
 
   // Mock data for demonstration if not provided
-  const rideData = ride || {
+  const mockData = {
     id: "ride-123",
     user: {
       name: "Sarah Johnson",
@@ -26,14 +26,31 @@ const RidePopup = ({ ride, onAccept, onIgnore }) => {
     },
   };
 
+  const rideData = ride || {
+    ...mockData,
+    ...ride, // Real data overwrites mock data
+    // Ensure specific fields are properly handled
+    distance: ride?.distance ?? mockData.distance,
+    duration: ride?.duration ?? mockData.duration,
+    amount: ride?.amount ?? ride?.fare ?? mockData.amount,
+    user: {
+      ...mockData.user,
+      ...ride?.user,
+    },
+  };
+
   const safePickup = {
-    address: rideData.pickupLocation || rideData.pickup?.address || "Pickup Location",
-    time: rideData.pickup?.time || "2 min away"
+    address:
+      rideData.pickupLocation || rideData.pickup?.address || "Pickup Location",
+    time: rideData.pickup?.time || "2 min away",
   };
 
   const safeDestination = {
-    address: rideData.dropoffLocation || rideData.destination?.address || "Destination",
-    time: rideData.destination?.time || "15 min"
+    address:
+      rideData.dropoffLocation ||
+      rideData.destination?.address ||
+      "Destination",
+    time: rideData.destination?.time || "15 min",
   };
 
   const handleAccept = () => {
@@ -72,7 +89,10 @@ const RidePopup = ({ ride, onAccept, onIgnore }) => {
               <div className="w-2 h-2 bg-green-500 absolute top-0 right-0 rounded-full border border-white"></div>
               <div className="h-12 w-12 rounded-full overflow-hidden border-2 border-white">
                 <img
-                  src={rideData.user?.photo || "https://randomuser.me/api/portraits/lego/1.jpg"}
+                  src={
+                    rideData.user?.photo ||
+                    "https://randomuser.me/api/portraits/lego/1.jpg"
+                  }
                   alt={rideData.user?.name || "User Photo"}
                   className="h-full w-full object-cover"
                 />
@@ -107,9 +127,7 @@ const RidePopup = ({ ride, onAccept, onIgnore }) => {
                       d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
-                  <span className="text-white text-xs">
-                    {safePickup.time}
-                  </span>
+                  <span className="text-white text-xs">{safePickup.time}</span>
                 </div>
               </div>
             </div>
@@ -122,7 +140,7 @@ const RidePopup = ({ ride, onAccept, onIgnore }) => {
             transition={{ delay: 0.3 }}
           >
             <span className="text-white font-bold">
-              ${(rideData.amount || 0).toFixed(2)}
+              ₹{(rideData.amount || 0).toFixed(2)}
             </span>
           </motion.div>
         </div>
@@ -150,18 +168,22 @@ const RidePopup = ({ ride, onAccept, onIgnore }) => {
         >
           <div className="text-center px-4 py-2 bg-gray-50 rounded-lg flex-1 mx-1">
             <p className="text-gray-500 text-xs">Distance</p>
-            <p className="font-bold text-gray-800">{(rideData.distance || 0).toFixed(1)} km</p>
+            <p className="font-bold text-gray-800">
+              {(Number(rideData.distance) || 0).toFixed(1)} km
+            </p>
           </div>
 
           <div className="text-center px-4 py-2 bg-gray-50 rounded-lg flex-1 mx-1">
             <p className="text-gray-500 text-xs">Duration</p>
-            <p className="font-bold text-gray-800">{rideData.duration} min</p>
+            <p className="font-bold text-gray-800">
+              {Number(rideData.duration) || 0} min
+            </p>
           </div>
 
           <div className="text-center px-4 py-2 bg-gray-50 rounded-lg flex-1 mx-1">
             <p className="text-gray-500 text-xs">Earning</p>
             <p className="font-bold text-green-600">
-              ${(rideData.amount || 0).toFixed(2)}
+              ₹{(Number(rideData.amount) || 0).toFixed(2)}
             </p>
           </div>
         </motion.div>
@@ -236,11 +258,11 @@ const RidePopup = ({ ride, onAccept, onIgnore }) => {
               </div>
             </div>
             <div className="flex-1">
-              <p className="text-gray-500 text-sm">Destination</p>
+              <p className="text-gray-500 text-sm">Destination Location</p>
               <p className="font-semibold text-gray-800">
                 {safeDestination.address}
               </p>
-              <p className="text-sm text-gray-600 font-medium">
+              <p className="text-sm text-green-600 font-medium">
                 Est. arrival: {safeDestination.time}
               </p>
             </div>
