@@ -92,6 +92,19 @@ function initialiseSocket(server) {
   });
 }
 
+// emit updated ETA/distance to user room when captain location updates or server recalculates ETA
+function sendRideUpdateToUser(ride) {
+  const { userId, _id: rideId } = ride;
+  const newDistance = calculateNewDistance(ride); // Implement this function based on your logic
+  const newDuration = calculateNewDuration(ride); // Implement this function based on your logic
+
+  io.to(`user_${userId}`).emit("ride-update", {
+    rideId,
+    distance: newDistance,
+    duration: newDuration
+  });
+}
+
 function sendMessageToSocketId(socketId, event, message) {
   console.log("=== SENDING MESSAGE TO SOCKET ===");
   console.log("Target Socket ID:", socketId);
@@ -114,4 +127,4 @@ function sendMessageToSocketId(socketId, event, message) {
   console.log("=== MESSAGE SEND COMPLETE ===");
 }
 
-export { initialiseSocket, sendMessageToSocketId };
+export { initialiseSocket, sendMessageToSocketId, sendRideUpdateToUser };
