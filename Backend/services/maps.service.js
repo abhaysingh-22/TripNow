@@ -76,24 +76,54 @@ async function getDistanceTime(origin, destination) {
   if (!apiKey) {
     throw new Error("Google Maps API key not set in environment variables.");
   }
+
   const url = `https://maps.gomaps.pro/maps/api/distancematrix/json`;
+
   try {
     const response = await axios.get(url, {
       params: {
         origins: origin,
         destinations: destination,
         key: apiKey,
+        units: "metric", // ✅ Ensure metric units
       },
     });
+
     const data = response.data;
     if (data.status !== "OK") {
       throw new Error(`GoMaps.pro API error: ${data.status}`);
     }
+
     if (data.rows && data.rows.length > 0 && data.rows[0].elements.length > 0) {
       const element = data.rows[0].elements[0];
+
+      if (element.status !== "OK") {
+        throw new Error(`Route calculation failed: ${element.status}`);
+      }
+
+      // ✅ Extract numeric values and convert to standard units
+      const distanceInMeters = element.distance.value; // Google returns meters
+      const durationInSeconds = element.duration.value; // Google returns seconds
+
+      const distanceInKm = distanceInMeters / 1000; // Convert to km
+      const durationInMinutes = durationInSeconds / 60; // Convert to minutes
+
+      console.log("✅ Distance calculation:", {
+        original: {
+          distance: element.distance.text,
+          duration: element.duration.text,
+        },
+        converted: {
+          distanceKm: distanceInKm,
+          durationMinutes: durationInMinutes,
+        },
+      });
+
       return {
-        distance: element.distance.text,
-        duration: element.duration.text,
+        distance: parseFloat(distanceInKm.toFixed(2)), // ✅ Return as number with 2 decimals
+        duration: Math.round(durationInMinutes), // ✅ Return as whole minutes
+        distanceText: element.distance.text, // Keep original text for display
+        durationText: element.duration.text, // Keep original text for display
       };
     } else {
       throw new Error("No results found for the given origin and destination.");
@@ -147,12 +177,14 @@ async function getCaptainsInRadius(latitude, longitude, radius) {
     });
 
     console.log("All captains found:", allCaptains.length);
-    
+
     // Log each captain's location
     allCaptains.forEach((captain, index) => {
       console.log(`Captain ${index + 1} (${captain._id}):`);
-      console.log(`  Location: lat=${captain.location.latitude}, lng=${captain.location.longitude}`);
-      console.log(`  Name: ${captain.fullName || 'N/A'}`);
+      console.log(
+        `  Location: lat=${captain.location.latitude}, lng=${captain.location.longitude}`
+      );
+      console.log(`  Name: ${captain.fullName || "N/A"}`);
     });
 
     // Filter by distance manually using Haversine formula
@@ -175,35 +207,44 @@ async function getCaptainsInRadius(latitude, longitude, radius) {
 
       console.log(`Captain ${index + 1} (${captain._id}):`);
       console.log(`  Distance: ${distance.toFixed(2)}km`);
-      console.log(`  Within radius (${radius}km)?: ${distance <= radius ? 'YES' : 'NO'}`);
-      
+      console.log(
+        `  Within radius (${radius}km)?: ${distance <= radius ? "YES" : "NO"}`
+      );
+
       return distance <= radius;
     });
 
     console.log("=== SEARCH RESULTS ===");
     console.log("Captains in radius:", captainsInRadius.length);
     console.log("================================");
-    
-    return captainsInRadius;
 
+    return captainsInRadius;
   } catch (error) {
     console.error("Error in getCaptainsInRadius:", error);
     throw error;
   }
 }
 
-// Add this helper function for distance calculation 
+// Add this helper function for distance calculation
 // we are doing manual calc because MongoDB can't execute the $geoNear query because there's no geospatial index on the location field.
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371; // Earth's radius in kilometers
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c; // Distance in kilometers
+}
+
+async function getFareWithDetails(pickup, dropoff, vehicleType) {
+  const trip = await mapsService.getDistanceTime(pickup, dropoff);
+  const fare = calculateFare(trip.distance, trip.duration, vehicleType);
+  return { fare, distance: trip.distance, duration: trip.duration };
 }
 
 export default {
@@ -211,4 +252,5 @@ export default {
   getDistanceTime,
   getSuggestions,
   getCaptainsInRadius,
+  getFareWithDetails,
 };
