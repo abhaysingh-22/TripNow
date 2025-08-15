@@ -1,7 +1,7 @@
 import Ride from "../models/ride.model.js";
 import mapsService from "./maps.service.js";
-import bcrypt from 'bcrypt';
-import crypto from 'crypto';
+import bcrypt from "bcrypt";
+import crypto from "crypto";
 
 async function getFare(pickupLocation, dropoffLocation, vehicleType = "car") {
   if (!pickupLocation || !dropoffLocation) {
@@ -49,46 +49,48 @@ function calculateFare(distance, duration, vehicleType = "car") {
 
   const vehicleRate = rates[(vehicleType || "car").toLowerCase()] || rates.car;
 
-  // Parse distance - extract numeric value from strings like "5.2 km" or "5200 m"
-  let distanceInKm;
-  if (typeof distance === "string") {
-    const distanceMatch = distance.match(/[\d.]+/);
-    const distanceValue = parseFloat(distanceMatch ? distanceMatch[0] : 0);
-    if (distance.toLowerCase().includes("km")) {
-      distanceInKm = distanceValue;
-    } else if (distance.toLowerCase().includes("m")) {
-      distanceInKm = distanceValue / 1000;
-    } else {
-      distanceInKm = distanceValue / 1000; // assume meters if no unit
-    }
-  } else {
-    distanceInKm = distance / 1000; // assume meters
-  }
+  // ✅ Now distance and duration should be numbers
+  const distanceInKm = typeof distance === "number" ? distance : parseFloat(distance) || 0;
+  const durationInMinutes = typeof duration === "number" ? duration : parseFloat(duration) || 0;
 
-  // Parse duration - extract numeric value from strings like "15 mins" or "900 secs"
-  let durationInMinutes;
-  if (typeof duration === "string") {
-    const durationMatch = duration.match(/[\d.]+/);
-    const durationValue = parseFloat(durationMatch ? durationMatch[0] : 0);
-    if (duration.toLowerCase().includes("hour")) {
-      durationInMinutes = durationValue * 60;
-    } else if (duration.toLowerCase().includes("min")) {
-      durationInMinutes = durationValue;
-    } else if (duration.toLowerCase().includes("sec")) {
-      durationInMinutes = durationValue / 60;
-    } else {
-      durationInMinutes = durationValue / 60; // assume seconds if no unit
-    }
-  } else {
-    durationInMinutes = duration / 60; // assume seconds
-  }
+  console.log("Fare calculation inputs:", {
+    vehicleType,
+    distanceInKm,
+    durationInMinutes,
+    rates: vehicleRate,
+  });
 
   const fare =
     vehicleRate.baseFare +
     distanceInKm * vehicleRate.perKm +
     durationInMinutes * vehicleRate.perMinute;
 
-  return Math.round(fare * 100) / 100;
+  const finalFare = Math.round(fare * 100) / 100; // Round to 2 decimal places
+
+  console.log("Calculated fare:", finalFare);
+
+  return finalFare;
+}
+
+// ✅ Update getFareWithDetails to return properly formatted data
+async function getFareWithDetails(
+  pickupLocation,
+  dropoffLocation,
+  vehicleType = "car"
+) {
+  const trip = await mapsService.getDistanceTime(
+    pickupLocation,
+    dropoffLocation
+  );
+  const fare = calculateFare(trip.distance, trip.duration, vehicleType);
+
+  return {
+    fare,
+    distance: trip.distance, // Already a number
+    duration: trip.duration, // Already a number
+    distanceText: trip.distanceText, // For display purposes
+    durationText: trip.durationText, // For display purposes
+  };
 }
 
 const createRide = async (rideData) => {
@@ -109,7 +111,7 @@ const createRide = async (rideData) => {
       dropoffLocation,
       fare,
       status: "pending",
-      otp: otp, 
+      otp: otp,
     });
 
     const savedRide = await newRide.save();
@@ -119,9 +121,9 @@ const createRide = async (rideData) => {
   }
 };
 function generateOTP() {
-    const otp = crypto.randomInt(1000, 9999).toString();
-    const hashedOTP = bcrypt.hashSync(otp, 10);
-    return { otp, hashedOTP };
+  const otp = crypto.randomInt(1000, 9999).toString();
+  const hashedOTP = bcrypt.hashSync(otp, 10);
+  return { otp, hashedOTP };
 }
 
 export default {
@@ -129,4 +131,5 @@ export default {
   generateOTP,
   getFare,
   calculateFare,
+  getFareWithDetails,
 };
