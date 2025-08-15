@@ -29,6 +29,26 @@ const CaptainHome = () => {
         userId: captain._id,
         role: "captain",
       });
+      console.log("Received ride request:", data);
+      console.log(
+        "Distance type:",
+        typeof data.ride?.distance,
+        "Value:",
+        data.ride?.distance
+      );
+      console.log(
+        "Amount type:",
+        typeof data.ride?.amount,
+        "Value:",
+        data.ride?.amount
+      );
+      console.log(
+        "Duration type:",
+        typeof data.ride?.duration,
+        "Value:",
+        data.ride?.duration
+      );
+
       // data will contain ride details sent by the user
       setRideData(data); // or update your state as needed
       setShowRideRequest(true);
@@ -46,7 +66,7 @@ const CaptainHome = () => {
   }, [captain, sendMessage]);
 
   // Captain online/offline status with localStorage persistence
-  // This ensures status survives page refreshes
+  // This ensures status survives page refreshs
   const [isOnline, setIsOnline] = useState(() => {
     const saved = localStorage.getItem("captainOnlineStatus");
     return saved ? JSON.parse(saved) : true;
@@ -85,8 +105,16 @@ const CaptainHome = () => {
 
   useEffect(() => {
     const cleanup = onMessage("ride-request", (data) => {
-      console.log("Received ride request:", data); // ✅ Add console log
-      setRideData(data.ride || data); // ✅ Handle both data.ride and data
+      console.log("🎯 CAPTAIN HOME - Received ride request:", data);
+      console.log("🚗 Ride data:", data.ride);
+      console.log("📏 Distance:", data.ride?.distance);
+      console.log("⏱️ Duration:", data.ride?.duration);
+
+      // ✅ Store the complete data including user info
+      setRideData({
+        ...data.ride,
+        user: data.user, // ✅ Make sure user data is passed
+      });
       setShowRideRequest(true);
     });
     return cleanup;
