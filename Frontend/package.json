@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "kill-port 5173 && vite",
+    "kill-old" : "kill-port 5173",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -34,6 +35,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.3.0",
+    "kill-port": "^2.0.1",
     "vite": "^7.0.4"
   }
 }
