@@ -28,8 +28,18 @@ const createRide = async (req, res) => {
     const newRide = await rideService.createRide(rideData);
 
     // ✅ Populate the ride with user data
-    const populatedRide = await Ride.findById(newRide._id).populate("userId");
+    // After line 30 (after populating ride):
+    const populatedRide = await Ride.findById(newRide._id).populate({
+      path: "userId",
+      select: "fullName name email photo rating",
+    });
 
+    // ✅ Add this debug logging:
+    console.log("🔍 POPULATED RIDE DEBUG:");
+    console.log("populatedRide.userId:", populatedRide.userId);
+    console.log("fullName:", populatedRide.userId?.fullName);
+    console.log("email:", populatedRide.userId?.email);
+    console.log("========================");
     // Send response first
     res.status(201).json(newRide);
 
@@ -37,6 +47,14 @@ const createRide = async (req, res) => {
     setImmediate(async () => {
       try {
         const { getCaptainsInRadius, getCoordinates } = mapsService;
+
+        // Get trip details first
+        const trip = await rideService.getFareWithDetails(
+          pickup,
+          dropoff,
+          vehicleType
+        );
+
         const pickupCoordinates = await getCoordinates(pickup);
         console.log("Pickup coordinates:", pickupCoordinates);
 
@@ -55,27 +73,28 @@ const createRide = async (req, res) => {
                 _id: newRide._id,
                 pickupLocation: pickup,
                 dropoffLocation: dropoff,
-                fare: fare,
+                fare: Number(fare) || 0,
                 pickup: {
                   address: pickup,
                   time: "2 min away",
                 },
                 destination: {
                   address: dropoff,
-                  time: "15 min",
+                  time: `${Math.round(Number(trip.duration)) || 15} min`, // Use trip.duration
                 },
-                distance: 5.2,
-                duration: 15,
-                amount: fare,
+                distance: Number(trip.distance) || 5.2, // Use trip.distance
+                duration: Number(trip.duration) || 15,
+                amount: Number(fare) || 0,
                 pickupCoordinates,
                 captainId: captain._id,
               },
               user: {
                 _id: populatedRide.userId._id,
-                name:
-                  populatedRide.userId.fullName?.firstName +
-                  " " +
-                  (populatedRide.userId.fullName?.lastName || ""),
+                name: populatedRide.userId.fullName?.firstName
+                  ? `${populatedRide.userId.fullName.firstName} ${
+                      populatedRide.userId.fullName.lastName || ""
+                    }`.trim()
+                  : populatedRide.userId.email || "Unknown User", // Use email as fallback since your User model has email
                 rating: populatedRide.userId.rating || 4.5,
                 photo:
                   populatedRide.userId.photo ||
@@ -99,6 +118,7 @@ const createRide = async (req, res) => {
   }
 };
 
+// In the getFare function:
 const getFare = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -110,16 +130,21 @@ const getFare = async (req, res) => {
 
   try {
     console.log("Calling Google Maps API to calculate fare...");
-    const fare = await rideService.getFare(pickup, dropoff, vehicleType);
-    console.log("Google Maps API success! Calculated fare:", fare);
+    const trip = await rideService.getFareWithDetails(pickup, dropoff, vehicleType);
+    console.log("✅ Trip calculation result:", trip);
+    
     return res.status(200).json({
       pickup,
       dropoff,
       vehicleType: vehicleType || "car",
-      fare,
+      fare: trip.fare,
+      distance: trip.distance, // ✅ Numeric value
+      duration: trip.duration, // ✅ Numeric value
+      distanceText: trip.distanceText, // ✅ For display
+      durationText: trip.durationText // ✅ For display
     });
   } catch (error) {
-    console.error("Error in getFare:", error.message);
+    console.error("❌ Error calculating fare:", error.message);
     return res.status(500).json({ error: error.message });
   }
 };
