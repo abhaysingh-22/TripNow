@@ -8,16 +8,16 @@ const ConfirmRidePopup = ({ ride, onConfirm, onCancel }) => {
   const [otp, setOtp] = useState("");
 
   // Mock data for demonstration if not provided
-  const rideData = ride || {
+  const mockData = {
     id: "ride-123",
     user: {
-      name: "Sarah Johnson",
+      name: "Unknown User",
       rating: 4.7,
-      photo: "https://randomuser.me/api/portraits/women/44.jpg",
+      photo: "https://randomuser.me/api/portraits/lego/1.jpg",
     },
     amount: 28.5,
     distance: 7.2,
-    duration: 18, // minutes
+    duration: 18,
     pickup: {
       address: "123 Park Avenue, Downtown",
       time: "3 min away",
@@ -26,6 +26,67 @@ const ConfirmRidePopup = ({ ride, onConfirm, onCancel }) => {
       address: "456 Central Plaza, Midtown",
       time: "18 min",
     },
+  };
+
+  // ✅ Safely merge real data with mock data
+  const rideData = {
+    ...mockData,
+    ...ride,
+    user: {
+      ...mockData.user,
+      ...ride?.user,
+    },
+    pickup: {
+      ...mockData.pickup,
+      ...ride?.pickup,
+      address:
+        ride?.pickupLocation ||
+        ride?.pickup?.address ||
+        mockData.pickup.address,
+    },
+    destination: {
+      ...mockData.destination,
+      ...ride?.destination,
+      address:
+        ride?.dropoffLocation ||
+        ride?.destination?.address ||
+        mockData.destination.address,
+    },
+  };
+
+  // ✅ Add debug logging
+  console.log("ConfirmRidePopup received ride:", ride);
+  console.log("ConfirmRidePopup final rideData:", rideData);
+
+  // ✅ Safe property access functions
+  const getUserPhoto = () => {
+    return (
+      rideData.user?.photo || "https://randomuser.me/api/portraits/lego/1.jpg"
+    );
+  };
+
+  const getUserName = () => {
+    return rideData.user?.name || "Unknown User";
+  };
+
+  const getUserRating = () => {
+    return rideData.user?.rating || 4.5;
+  };
+
+  const getAmount = () => {
+    return Number(rideData.amount) || 0;
+  };
+
+  const getDistance = () => {
+    const distance = rideData.distance || rideData.ride?.distance || 0;
+    return typeof distance === "number" ? distance : parseFloat(distance) || 0;
+  };
+
+  const getDuration = () => {
+    const duration = rideData.duration || rideData.ride?.duration || 0;
+    return typeof duration === "number"
+      ? Math.round(duration)
+      : Math.round(parseFloat(duration)) || 0;
   };
 
   const handleConfirm = () => {
@@ -79,15 +140,15 @@ const ConfirmRidePopup = ({ ride, onConfirm, onCancel }) => {
               <div className="w-2 h-2 bg-green-500 absolute top-0 right-0 rounded-full border border-white"></div>
               <div className="h-12 w-12 rounded-full overflow-hidden border-2 border-white">
                 <img
-                  src={rideData.user.photo}
-                  alt={rideData.user.name}
+                  src={getUserPhoto()} // ✅ Use safe function
+                  alt={getUserName()} // ✅ Use safe function
                   className="h-full w-full object-cover"
                 />
               </div>
             </motion.div>
             <div className="ml-3">
               <h3 className="font-bold text-white text-lg">
-                {rideData.user.name}
+                {getUserName()} {/* ✅ Use safe function */}
               </h3>
               <div className="flex items-center">
                 <svg
@@ -98,7 +159,7 @@ const ConfirmRidePopup = ({ ride, onConfirm, onCancel }) => {
                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                 </svg>
                 <span className="text-white text-sm ml-1">
-                  {rideData.user.rating}
+                  {getUserRating()} {/* ✅ Use safe function */}
                 </span>
                 <div className="flex items-center ml-2 bg-white bg-opacity-20 px-2 py-0.5 rounded">
                   <svg
@@ -115,7 +176,7 @@ const ConfirmRidePopup = ({ ride, onConfirm, onCancel }) => {
                     />
                   </svg>
                   <span className="text-white text-xs">
-                    {rideData.pickup.time}
+                    {rideData.pickup?.time || "2 min away"}
                   </span>
                 </div>
               </div>
@@ -129,7 +190,7 @@ const ConfirmRidePopup = ({ ride, onConfirm, onCancel }) => {
             transition={{ delay: 0.3 }}
           >
             <span className="text-white font-bold">
-              ${rideData.amount.toFixed(2)}
+              ₹{getAmount().toFixed(2)} {/* ✅ Use safe function */}
             </span>
           </motion.div>
         </div>
@@ -159,18 +220,23 @@ const ConfirmRidePopup = ({ ride, onConfirm, onCancel }) => {
         >
           <div className="text-center px-4 py-2 bg-gray-50 rounded-lg flex-1 mx-1">
             <p className="text-gray-500 text-xs">Distance</p>
-            <p className="font-bold text-gray-800">{rideData.distance} km</p>
+            <p className="font-bold text-gray-800">
+              {getDistance().toFixed(1)} km{" "}
+              {/* ✅ Always show 1 decimal place */}
+            </p>
           </div>
 
           <div className="text-center px-4 py-2 bg-gray-50 rounded-lg flex-1 mx-1">
             <p className="text-gray-500 text-xs">Duration</p>
-            <p className="font-bold text-gray-800">{rideData.duration} min</p>
+            <p className="font-bold text-gray-800">
+              {getDuration()} min {/* ✅ Whole minutes */}
+            </p>
           </div>
 
           <div className="text-center px-4 py-2 bg-gray-50 rounded-lg flex-1 mx-1">
             <p className="text-gray-500 text-xs">Earning</p>
             <p className="font-bold text-green-600">
-              ${rideData.amount.toFixed(2)}
+              ₹{getAmount().toFixed(2)} {/* ✅ Use safe function */}
             </p>
           </div>
         </motion.div>
@@ -211,10 +277,10 @@ const ConfirmRidePopup = ({ ride, onConfirm, onCancel }) => {
             <div className="flex-1">
               <p className="text-gray-500 text-sm">Pickup Location</p>
               <p className="font-semibold text-gray-800">
-                {rideData.pickup.address}
+                {rideData.pickup?.address || "Pickup Location"}
               </p>
               <p className="text-sm text-green-600 font-medium">
-                {rideData.pickup.time}
+                {rideData.pickup?.time || "2 min away"}
               </p>
             </div>
           </div>
@@ -247,10 +313,10 @@ const ConfirmRidePopup = ({ ride, onConfirm, onCancel }) => {
             <div className="flex-1">
               <p className="text-gray-500 text-sm">Destination</p>
               <p className="font-semibold text-gray-800">
-                {rideData.destination.address}
+                {rideData.destination?.address || "Destination"}
               </p>
-              <p className="text-sm text-gray-600 font-medium">
-                Est. arrival: {rideData.destination.time}
+              <p className="text-sm text-green-600 font-medium">
+                Est. arrival: {rideData.destination?.time || "15 min"}
               </p>
             </div>
           </div>
