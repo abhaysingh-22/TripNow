@@ -71,7 +71,7 @@ export const useFareCalculation = () => {
               requestHeaders.Authorization = `Bearer ${token}`;
             }
 
-            const response = await axios.get(`${API_BASE_URL}/ride/fare`, {
+            const response = await axios.get(`${API_BASE_URL}/rides/fare`, {
               params: {
                 pickup: pickup.trim(),
                 dropoff: dropoff.trim(),
