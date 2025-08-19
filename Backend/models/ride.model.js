@@ -45,6 +45,11 @@ const rideSchema = new Schema({
     type: String,
   },
 
+  paymentMethod: {
+    type: String,
+    enum: ["cash", "upi"],
+    default: "cash",
+  },
   otp: {
     type: String,
     required: true,
