@@ -1,6 +1,5 @@
 import Ride from "../models/ride.model.js";
 import mapsService from "./maps.service.js";
-import bcrypt from "bcrypt";
 import crypto from "crypto";
 
 async function getFare(pickupLocation, dropoffLocation, vehicleType = "car") {
@@ -49,9 +48,11 @@ function calculateFare(distance, duration, vehicleType = "car") {
 
   const vehicleRate = rates[(vehicleType || "car").toLowerCase()] || rates.car;
 
-  // ✅ Now distance and duration should be numbers
-  const distanceInKm = typeof distance === "number" ? distance : parseFloat(distance) || 0;
-  const durationInMinutes = typeof duration === "number" ? duration : parseFloat(duration) || 0;
+  // Convert distance and duration to numbers
+  const distanceInKm =
+    typeof distance === "number" ? distance : parseFloat(distance) || 0;
+  const durationInMinutes =
+    typeof duration === "number" ? duration : parseFloat(duration) || 0;
 
   console.log("Fare calculation inputs:", {
     vehicleType,
@@ -72,64 +73,104 @@ function calculateFare(distance, duration, vehicleType = "car") {
   return finalFare;
 }
 
-// ✅ Update getFareWithDetails to return properly formatted data
+// Get fare with distance and duration details
 async function getFareWithDetails(
   pickupLocation,
   dropoffLocation,
   vehicleType = "car"
 ) {
-  const trip = await mapsService.getDistanceTime(
-    pickupLocation,
-    dropoffLocation
-  );
-  const fare = calculateFare(trip.distance, trip.duration, vehicleType);
+  try {
+    const trip = await mapsService.getDistanceTime(
+      pickupLocation,
+      dropoffLocation
+    );
+    const fare = calculateFare(trip.distance, trip.duration, vehicleType);
 
-  return {
-    fare,
-    distance: trip.distance, // Already a number
-    duration: trip.duration, // Already a number
-    distanceText: trip.distanceText, // For display purposes
-    durationText: trip.durationText, // For display purposes
-  };
+    return {
+      fare,
+      distance: trip.distance, // Already a number
+      duration: Math.round(Number(trip.duration)), // Round duration to whole number
+      distanceText: trip.distanceText, // For display purposes
+      durationText: trip.durationText, // For display purposes
+    };
+  } catch (error) {
+    throw new Error(`Failed to get fare with details: ${error.message}`);
+  }
 }
 
-const createRide = async (rideData) => {
-  const { userId, pickupLocation, dropoffLocation, vehicleType } = rideData;
+// Generate OTP for ride
+function generateOTP() {
+  const otp = crypto.randomInt(1000, 9999).toString();
+  return otp; // Return just the OTP, no hashing needed for display
+}
 
-  if (!userId || !pickupLocation || !dropoffLocation || !vehicleType) {
+// Create a new ride
+const createRide = async (rideData) => {
+  const {
+    userId,
+    pickupLocation,
+    dropoffLocation,
+    vehicleType,
+    fare,
+    paymentMethod,
+  } = rideData;
+
+  // Validate required fields
+  if (!userId || !pickupLocation || !dropoffLocation) {
     throw new Error(
-      "User ID, pickup location, dropoff location, and vehicle type are required."
+      "User ID, pickup location, and dropoff location are required."
     );
   }
 
   try {
-    const fare = await getFare(pickupLocation, dropoffLocation, vehicleType);
-    const { otp } = generateOTP();
+    // Generate OTP for the ride
+    const otp = generateOTP();
+
+    // Calculate fare if not provided
+    let rideFare = fare;
+    if (!rideFare) {
+      rideFare = await getFare(pickupLocation, dropoffLocation, vehicleType);
+    }
+
+    // Create new ride object
     const newRide = new Ride({
       userId,
       pickupLocation,
       dropoffLocation,
-      fare,
+      vehicleType: vehicleType || "car",
+      fare: rideFare,
+      paymentMethod: paymentMethod || "cash",
       status: "pending",
       otp: otp,
     });
 
+    // Save ride to database
     const savedRide = await newRide.save();
+
+    console.log("✅ Ride created successfully:", {
+      rideId: savedRide._id,
+      fare: savedRide.fare,
+      otp: otp, // Log OTP for debugging
+    });
+
     return savedRide;
   } catch (error) {
+    console.error("❌ Failed to create ride:", error.message);
     throw new Error(`Failed to create ride: ${error.message}`);
   }
 };
-function generateOTP() {
-  const otp = crypto.randomInt(1000, 9999).toString();
-  const hashedOTP = bcrypt.hashSync(otp, 10);
-  return { otp, hashedOTP };
+
+// Get trip details (alias for getFareWithDetails)
+async function getTrip(pickupLocation, dropoffLocation, vehicleType = "car") {
+  return await getFareWithDetails(pickupLocation, dropoffLocation, vehicleType);
 }
 
+// Export all functions
 export default {
   createRide,
   generateOTP,
   getFare,
   calculateFare,
   getFareWithDetails,
+  getTrip,
 };
