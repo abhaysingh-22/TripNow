@@ -49,6 +49,10 @@ function ConfirmRide({
   const displayDuration =
     rideResult?.duration ?? fare?.duration ?? selectedVehicle?.duration ?? null;
 
+  const formattedDistance = displayDistance
+    ? Number(displayDistance).toFixed(1)
+    : null;
+
   const formattedDuration = displayDuration
     ? Math.round(Number(displayDuration))
     : null;
@@ -66,7 +70,12 @@ function ConfirmRide({
       return;
     }
     // call onConfirm with selected payment (Home will handle API)
-    onConfirm(selectedPayment);
+    onConfirm({
+      pickup: pickupAddress,
+      dropoff: destinationAddress,
+      vehicleType: selectedVehicle?.name?.toLowerCase() || "car",
+      paymentMethod: selectedPayment,
+    });
   };
 
   return (
@@ -132,14 +141,14 @@ function ConfirmRide({
               Est. arrival: {destinationTime}
             </p>
           </div>
-          {displayDistance != null && (
+          {formattedDistance && (
             <p className="text-sm text-gray-500">
-              Distance: {displayDistance} km
+              Distance: {formattedDistance} km
             </p>
           )}
-          {displayDuration != null && (
+          {formattedDuration && (
             <p className="text-sm text-gray-500">
-              Duration: {Math.round(Number(displayDuration))} min
+              Duration: {formattedDuration} min
             </p>
           )}
         </div>
