@@ -2,7 +2,7 @@ import express from "express";
 import { Router } from "express";
 import { body, query } from "express-validator";
 import rideController from "../controllers/ride.controller.js";
-import { authUser } from "../middlewares/auth.middleware.js";
+import { authUser, authCaptain } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
@@ -42,9 +42,42 @@ router.get(
       .isString()
       .withMessage("Vehicle type must be a string"),
   ],
-  authUser, 
+  authUser,
   rideController.getFare
 );
 
+router.post(
+  "/confirm",
+  [
+    body("pickup")
+      .isString()
+      .notEmpty()
+      .withMessage("Pickup location is required"),
+    body("dropoff")
+      .isString()
+      .notEmpty()
+      .withMessage("Dropoff location is required"),
+    body("vehicleType")
+      .isString()
+      .notEmpty()
+      .withMessage("Vehicle type is required"),
+    body("paymentMethod")
+      .isString()
+      .notEmpty()
+      .withMessage("Payment method is required"),
+  ],
+  authUser,
+  rideController.confirmRide
+);
 
+router.post(
+  "/accept",
+  [
+    body("rideId")
+      .isMongoId() // ✅ Change from .isString() to .isMongoId()
+      .withMessage("Valid ride ID is required"),
+  ],
+  authCaptain,
+  rideController.acceptRide
+);
 export default router;
