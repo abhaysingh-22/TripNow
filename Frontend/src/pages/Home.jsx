@@ -63,6 +63,49 @@ const formVariants = {
   minimized: { height: 0, opacity: 0, marginTop: 0, overflow: "hidden" },
 };
 
+// ✅ Add this new component inside Home.jsx (after imports, before Home function)
+const OTPDisplay = ({ otp, onClose }) => {
+  if (!otp) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="fixed top-24 left-1/2 transform -translate-x-1/2 z-[70] bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-4 rounded-2xl shadow-2xl border-2 border-green-400 min-w-[300px]"
+      style={{ zIndex: 70 }} // Ensure it's above everything
+    >
+      <div className="flex items-center space-x-3">
+        <div className="bg-white/20 rounded-full p-2 animate-pulse">
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fillRule="evenodd"
+              d="M18 8a6 6 0 01-7.743 5.743L10 14l-2 1-1 1H4v-1l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </div>
+        <div className="flex-1">
+          <p className="font-bold text-xl">Your OTP: {otp}</p>
+          <p className="text-sm opacity-90">Show this to your driver</p>
+        </div>
+        <button
+          onClick={onClose}
+          className="bg-white/20 hover:bg-white/30 rounded-full p-2 transition-colors ml-2"
+        >
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fillRule="evenodd"
+              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </button>
+      </div>
+    </motion.div>
+  );
+};
+
 function Home() {
   const { sendMessage, onMessage } = useSocket();
   const { user } = useContext(UserContext);
@@ -90,6 +133,10 @@ function Home() {
 
   const [currentRide, setCurrentRide] = useState(null);
   const [isSubmittingRide, setIsSubmittingRide] = useState(false);
+
+  // ✅ Add this state near other state declarations (around line 85)
+  const [showOTP, setShowOTP] = useState(false);
+  const [userOTP, setUserOTP] = useState(null);
 
   // Custom hooks
   const {
@@ -132,45 +179,102 @@ function Home() {
 
   // Input change handler
 
+  // Update the handleCreateRide function:
   const handleCreateRide = useCallback(
-    async (selectedPayment) => {
-      if (!selectedPayment || !pickup || !destination) {
-        toast.error("Please select pickup, destination and vehicle");
+    async (rideData) => {
+      if (!rideData.pickup || !rideData.dropoff) {
+        toast.error("Please select pickup and destination");
         return;
       }
 
       setIsSubmittingRide(true);
       try {
-        const res = await fetch("/api/rides/create", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${user?.token || ""}`,
-          },
-          body: JSON.stringify({
-            pickup,
-            dropoff: destination,
-            vehicleType: selectedVehicle?.id || selectedVehicle?.type,
-            paymentMethod: selectedPayment || null,
-          }),
-        });
+        const token = localStorage.getItem("token") || user?.token;
 
-        if (!res.ok) {
-          throw new Error("Failed to create ride");
-        }
+        const res = await fetch(
+          `${import.meta.env.VITE_BASE_URL}/api/rides/confirm`, // ✅ Fixed endpoint
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              pickup: rideData.pickup,
+              dropoff: rideData.dropoff,
+              vehicleType: rideData.vehicleType,
+              paymentMethod: rideData.paymentMethod,
+            }),
+          }
+        );
 
         const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to create ride");
+        }
+
+        console.log("✅ Ride confirmed:", data);
+
+        // Store the ride data including OTP
         setCurrentRide(data.ride);
-        toast.success("Ride created successfully");
+
+        if (data.ride?.otp) {
+          setUserOTP(data.ride.otp);
+          setShowOTP(true);
+          console.log("✅ OTP set:", data.ride.otp);
+        }
+
+        // ✅ Use the hook functions instead of undefined state setters
+        // Move to looking for driver state using hook functions
+        handleConfirmPickup(); // This should transition to looking for driver state
+
+        // ✅ Show simple success message without OTP (OTP will be shown persistently)
+        toast.success("Ride request sent to nearby drivers!", {
+          duration: 3000,
+        });
       } catch (error) {
         console.error("Create ride error:", error);
-        toast.error(error.message);
+        toast.error(error.message || "Failed to create ride");
       } finally {
         setIsSubmittingRide(false);
       }
     },
-    [pickup, destination, selectedVehicle, user]
+    [user, handleConfirmPickup] // ✅ Add handleConfirmPickup to dependencies
   );
+
+  // Add socket listener for ride acceptance
+  useEffect(() => {
+    const cleanup = onMessage("ride-accepted", (data) => {
+      console.log("🎉 Ride accepted by captain:", data);
+      console.log("🔑 OTP from socket:", data.otp);
+
+      // Update current ride with captain info
+      setCurrentRide((prev) => ({
+        ...prev,
+        captain: data.captain,
+        status: "accepted",
+      }));
+
+      // ✅ Show persistent OTP instead of toast
+      if (data.otp) {
+        setUserOTP(data.otp);
+        setShowOTP(true);
+        console.log("✅ OTP updated from socket:", data.otp);
+      }
+
+      // Show success message
+      toast.success("Driver found! Your ride has been accepted.", {
+        duration: 5000,
+      });
+
+      // Move to waiting for driver state (use hook function)
+      // Note: You might need to call the appropriate hook function here
+      // Check what function from useRideManagement moves to waiting state
+    });
+
+    return cleanup;
+  }, [onMessage]);
 
   const handleInputChange = useCallback(
     (value, inputType) => {
@@ -256,6 +360,8 @@ function Home() {
     handlePanelClose();
     setPickup("");
     setDestination("");
+    setShowOTP(false);
+    setUserOTP(null);
   }, [handleCancelRiding, handlePanelClose]);
 
   // Effects
@@ -331,6 +437,20 @@ function Home() {
         onMenuClick={() => setIsSidePanelOpen(true)}
         onGoBackToRide={handleGoBackToRide}
       />
+
+      {/* ✅ Move OTP Display here with AnimatePresence */}
+      <AnimatePresence>
+        {showOTP && userOTP && (
+          <OTPDisplay
+            otp={userOTP}
+            onClose={() => {
+              setShowOTP(false);
+              setUserOTP(null);
+              console.log("🔒 OTP closed");
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Map Section */}
       <motion.div
