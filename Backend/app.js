@@ -36,7 +36,7 @@ app.use((req, res, next) => {
 app.use('/api/users', userRoutes);
 app.use('/api/captains', captainRoutes);
 app.use('/api/maps', mapsRoutes);
-app.use('/api/ride', rideRoutes);
+app.use('/api/rides', rideRoutes);
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
