@@ -5,6 +5,8 @@ import { useNavigate } from "react-router-dom";
 const RidePopup = ({ ride, onAccept, onIgnore }) => {
   const navigate = useNavigate();
 
+  console.log("Ridepopup received ride data:", ride);
+
   // Mock data for demonstration if not provided
   const mockData = {
     id: "ride-123",
@@ -26,18 +28,51 @@ const RidePopup = ({ ride, onAccept, onIgnore }) => {
     },
   };
 
-  const rideData = ride || {
-    ...mockData,
-    ...ride, // Real data overwrites mock data
-    // Ensure specific fields are properly handled
-    distance: ride?.distance ?? mockData.distance,
-    duration: ride?.duration ?? mockData.duration,
-    amount: ride?.amount ?? ride?.fare ?? mockData.amount,
-    user: {
-      ...mockData.user,
-      ...ride?.user,
-    },
-  };
+  const rideData = (() => {
+    // If no ride data provided, use mock data
+    if (!ride) return mockData;
+
+    // If ride data provided, merge properly with real data taking precedence
+    return {
+      ...mockData, // Base structure
+      ...ride, // Real data overwrites mock data
+      // Handle specific fields with proper fallbacks
+      distance: ride.distance ?? ride.ride?.distance ?? mockData.distance,
+      duration: ride.duration ?? ride.ride?.duration ?? mockData.duration,
+      amount:
+        ride.amount ??
+        ride.fare ??
+        ride.ride?.amount ??
+        ride.ride?.fare ??
+        mockData.amount,
+      user: ride.user ?? ride.ride?.user ?? mockData.user,
+      // Handle nested ride structure from socket
+      pickupLocation:
+        ride.pickupLocation ??
+        ride.ride?.pickupLocation ??
+        mockData.pickup.address,
+      dropoffLocation:
+        ride.dropoffLocation ??
+        ride.ride?.dropoffLocation ??
+        mockData.destination.address,
+      pickup: {
+        address:
+          ride.pickup?.address ??
+          ride.pickupLocation ??
+          ride.ride?.pickupLocation ??
+          mockData.pickup.address,
+        time: ride.pickup?.time ?? "2 min away",
+      },
+      destination: {
+        address:
+          ride.destination?.address ??
+          ride.dropoffLocation ??
+          ride.ride?.dropoffLocation ??
+          mockData.destination.address,
+        time: ride.destination?.time ?? "15 min",
+      },
+    };
+  })();
 
   const safePickup = {
     address:
@@ -55,7 +90,19 @@ const RidePopup = ({ ride, onAccept, onIgnore }) => {
 
   const handleAccept = () => {
     if (onAccept) {
-      onAccept(rideData.id);
+      // ✅ Get the correct ride ID from the data structure
+      const rideId = ride?._id || ride?.ride?._id || ride?.id;
+
+      console.log("🔍 RidePopup - Available ride data:", ride);
+      console.log("🔍 RidePopup - Extracted ride ID:", rideId);
+
+      if (!rideId) {
+        console.error("❌ No valid ride ID found in data");
+        toast.error("Invalid ride data");
+        return;
+      }
+
+      onAccept(rideId);
     }
   };
 
