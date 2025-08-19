@@ -60,4 +60,3 @@ export const SocketProvider = ({ children }) => {
 };
 
 export const useSocket = () => useContext(SocketContext);
-// export default SocketContext;
