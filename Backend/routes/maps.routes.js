@@ -27,5 +27,4 @@ router.get(
   mapsController.getSuggestions
 );
 
-
 export default router;
