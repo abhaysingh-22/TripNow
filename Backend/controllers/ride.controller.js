@@ -130,9 +130,13 @@ const getFare = async (req, res) => {
 
   try {
     console.log("Calling Google Maps API to calculate fare...");
-    const trip = await rideService.getFareWithDetails(pickup, dropoff, vehicleType);
+    const trip = await rideService.getFareWithDetails(
+      pickup,
+      dropoff,
+      vehicleType
+    );
     console.log("✅ Trip calculation result:", trip);
-    
+
     return res.status(200).json({
       pickup,
       dropoff,
@@ -141,7 +145,7 @@ const getFare = async (req, res) => {
       distance: trip.distance, // ✅ Numeric value
       duration: trip.duration, // ✅ Numeric value
       distanceText: trip.distanceText, // ✅ For display
-      durationText: trip.durationText // ✅ For display
+      durationText: trip.durationText, // ✅ For display
     });
   } catch (error) {
     console.error("❌ Error calculating fare:", error.message);
@@ -149,7 +153,202 @@ const getFare = async (req, res) => {
   }
 };
 
+const confirmRide = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const { pickup, dropoff, vehicleType, paymentMethod } = req.body;
+
+  try {
+    const fare = await rideService.getFare(pickup, dropoff, vehicleType);
+
+    const rideData = {
+      userId: req.user._id,
+      pickupLocation: pickup,
+      dropoffLocation: dropoff,
+      vehicleType,
+      paymentMethod,
+      fare,
+    };
+
+    const newRide = await rideService.createRide(rideData);
+
+    const populatedRide = await Ride.findById(newRide._id).populate({
+      path: "userId",
+      select: "fullName name email photo rating",
+    });
+
+    // console.log("Ride created and populated:", {
+    //   rideId: newRide._id,
+    //   userId: populatedRide.userId._id,
+    //   otp: newRide.otp,
+    // });
+
+    res.status(201).json({
+      success: true,
+      messgae: "Ride request sent to nearby drivers",
+      ride: {
+        _id: newRide._id,
+        pickupLocation: pickup,
+        dropoffLocation: dropoff,
+        fare: fare,
+        otp: newRide.otp,
+        status: newRide.status,
+        paymentMethod: paymentMethod,
+      },
+    });
+
+    setImmediate(async () => {
+      try {
+        const { getCaptainsInRadius, getCoordinates } = mapsService;
+
+        const trip = await rideService.getFareWithDetails(
+          pickup,
+          dropoff,
+          vehicleType
+        );
+
+        const pickupCoordinates = await getCoordinates(pickup);
+        console.log("Pickup coordinates:", pickupCoordinates);
+
+        const captainInRadius = await getCaptainsInRadius(
+          pickupCoordinates.latitude,
+          pickupCoordinates.longitude,
+          5
+        );
+
+        let userName = "Unknown User";
+        if (populatedRide.userId) {
+          if (populatedRide.userId.fullName) {
+            userName = `${populatedRide.userId.fullName.firstName} ${
+              populatedRide.userId.fullName.lastName || ""
+            }`.trim();
+          } else if (populatedRide.userId.name) {
+            userName = populatedRide.userId.name;
+          } else if (populatedRide.userId.email) {
+            userName = populatedRide.userId.email;
+          }
+        }
+
+        captainInRadius.forEach((captain) => {
+          if (captain.socketId) {
+            console.log(`Sending ride request to captain: ${captain._id}`);
+
+            const rideRequestData = {
+              type: "newRide",
+              ride: {
+                _id: newRide._id,
+                pickupLocation: pickup,
+                dropoffLocation: dropoff,
+                fare: Number(fare) || 0,
+                pickup: {
+                  address: pickup,
+                  time: trip.pickupTime,
+                },
+                destination: {
+                  address: dropoff,
+                  time: `${Math.round(Number(trip.duration)) || 15} min`,
+                },
+                distance: Number(trip.distance) || 5.2,
+                duration: Math.round(Number(trip.duration)) || 15,
+                amount: Number(fare) || 0,
+                paymentMethod: paymentMethod,
+                pickupCoordinates: pickupCoordinates,
+                captainId: captain._id,
+              },
+              user: {
+                _id: populatedRide.userId._id,
+                name: userName,
+                rating: populatedRide.userId.rating || 4.5,
+                photo:
+                  populatedRide.userId.photo ||
+                  "https://randomuser.me/api/portraits/lego/1.jpg",
+              },
+            };
+
+            sendMessageToSocketId(
+              captain.socketId,
+              "ride-request",
+              rideRequestData
+            );
+          }
+        });
+
+        console.log("ride request sent to all captains");
+      } catch (error) {
+        console.error("Background processing error:", error);
+      }
+    });
+
+    return res
+      .status(201)
+      .json({ message: "Ride confirmed", ride: populatedRide });
+  } catch (error) {
+    console.error("❌ Error confirming ride:", error.message);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+const acceptRide = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const { rideId } = req.body;
+  const captainId = req.captain._id;
+
+  try {
+    const ride = await Ride.findByIdAndUpdate(
+      rideId,
+      { captainId: captainId, status: "accepted" },
+      { new: true }
+    ).populate("userId");
+
+    if (!ride) {
+      return res.status(404).json({ error: "Ride not found" });
+    }
+
+    if (ride.userId.socketId) {
+      console.log(`📤 Sending OTP to user: ${ride.userId._id}`);
+      sendMessageToSocketId(ride.userId.socketId, "ride-accepted", {
+        rideId: ride._id,
+        otp: ride.otp, // ✅ Send OTP to user when captain accepts
+        captain: {
+          _id: captainId,
+          name: req.captain.fullName?.firstName || "Driver",
+          photo:
+            req.captain.photo ||
+            "https://randomuser.me/api/portraits/lego/1.jpg",
+          vehicle: req.captain.vehicle,
+        },
+        message: "Driver found! Your ride has been accepted.",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Ride accepted successfully",
+      ride: {
+        _id: ride._id,
+        pickupLocation: ride.pickupLocation,
+        dropoffLocation: ride.dropoffLocation,
+        fare: ride.fare,
+        status: ride.status,
+        otp: ride.otp, // ✅ Send OTP back to captain for verification
+      },
+    });
+  } catch (error) {
+    console.error("Accept ride error:", error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
 export default {
   createRide,
   getFare,
+  confirmRide,
+  acceptRide,
 };
