@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect, useContext } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import mapVideo from "../assets/maps.mp4";
+import toast from "react-hot-toast";
 import CaptainDetails from "../components/CaptainDetails";
 import RidePopup from "../components/RidePopup";
 import ConfirmRidePopup from "../components/ConfirmRidePopup";
@@ -23,34 +24,20 @@ const CaptainHome = () => {
   const { onMessage, sendMessage } = useSocket();
 
   useEffect(() => {
-    // Listen for ride requests from users
     const cleanup = onMessage("ride-request", (data) => {
-      sendMessage("ride-request", {
-        userId: captain._id,
-        role: "captain",
-      });
-      console.log("Received ride request:", data);
-      console.log(
-        "Distance type:",
-        typeof data.ride?.distance,
-        "Value:",
-        data.ride?.distance
-      );
-      console.log(
-        "Amount type:",
-        typeof data.ride?.amount,
-        "Value:",
-        data.ride?.amount
-      );
-      console.log(
-        "Duration type:",
-        typeof data.ride?.duration,
-        "Value:",
-        data.ride?.duration
-      );
+      console.log("🎯 CAPTAIN HOME - Received ride request:", data);
+      console.log("👤 User data received:", data.user);
+      console.log("🚗 Ride data received:", data.ride);
+      console.log("🆔 Ride ID:", data.ride?._id);
 
-      // data will contain ride details sent by the user
-      setRideData(data); // or update your state as needed
+      // ✅ Store the complete data structure correctly
+      setRideData({
+        ...data.ride, // Spread the ride data
+        user: data.user, // Add user data at top level
+        isMockData: false, // Mark as real data
+        _id: data.ride._id, // Ensure _id is at top level
+      });
+
       setShowRideRequest(true);
     });
     return cleanup;
@@ -103,23 +90,6 @@ const CaptainHome = () => {
     return () => clearInterval(locationInterval);
   }, [isOnline, captain, sendMessage]);
 
-  useEffect(() => {
-    const cleanup = onMessage("ride-request", (data) => {
-      console.log("🎯 CAPTAIN HOME - Received ride request:", data);
-      console.log("🚗 Ride data:", data.ride);
-      console.log("📏 Distance:", data.ride?.distance);
-      console.log("⏱️ Duration:", data.ride?.duration);
-
-      // ✅ Store the complete data including user info
-      setRideData({
-        ...data.ride,
-        user: data.user, // ✅ Make sure user data is passed
-      });
-      setShowRideRequest(true);
-    });
-    return cleanup;
-  }, [onMessage]);
-
   // Save captain status to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem("captainOnlineStatus", JSON.stringify(isOnline));
@@ -131,37 +101,6 @@ const CaptainHome = () => {
       setShowRideRequest(false);
       setShowConfirmRide(false);
     }
-  }, [isOnline]);
-
-  // Simulate ride requests only when captain is online
-  useEffect(() => {
-    if (!isOnline) return; // Don't show rides if offline
-
-    const timer = setTimeout(() => {
-      // Mock ride data - in production this comes from backend
-      setRideData({
-        id: "ride-" + Math.floor(Math.random() * 1000),
-        user: {
-          name: "Alex Thompson",
-          rating: 4.8,
-          photo: "https://randomuser.me/api/portraits/men/32.jpg",
-        },
-        amount: 32.75,
-        distance: 8.4,
-        duration: 22,
-        pickup: {
-          address: "789 Maple Street, Downtown",
-          time: "4 min away",
-        },
-        destination: {
-          address: "567 Oak Avenue, Westside",
-          time: "22 min",
-        },
-      });
-      setShowRideRequest(true);
-    }, 5000);
-
-    return () => clearTimeout(timer);
   }, [isOnline]);
 
   // Apply zoom effect to map video
@@ -183,12 +122,64 @@ const CaptainHome = () => {
   const handleZoomOut = () => setMapZoom((prev) => Math.max(prev - 0.1, 1));
 
   // Ride Management Handlers
-  const handleAcceptRide = (rideId) => {
-    console.log(`Accepted ride: ${rideId}`);
-    // Send response to user
-    sendMessage("ride-response", { rideId, status: "accepted" });
-    setShowRideRequest(false);
-    setShowConfirmRide(true);
+  const handleAcceptRide = async (rideId) => {
+    console.log(`Accepting ride: ${rideId}`);
+
+    if (rideData?.isMockData) {
+      console.log("Skipping API call for mock data");
+      toast.success("Mock ride accepted! (No real API call)");
+      setShowRideRequest(false);
+      setShowConfirmRide(true);
+      return;
+    }
+
+    if (!rideId || typeof rideId !== "string" || rideId.length !== 24) {
+      console.error("❌ Invalid ride ID format:", rideId);
+      toast.error("Invalid ride ID format");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        console.error("❌ No authentication token found");
+        toast.error("Authentication required. Please login again.");
+        return;
+      }
+
+      console.log(`📤 Sending accept request for ride: ${rideId}`);
+
+      const res = await fetch(
+        `${import.meta.env.VITE_BASE_URL}/api/rides/accept`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ rideId }),
+        }
+      );
+
+      console.log(`📥 Response status: ${res.status}`);
+
+      const data = await res.json();
+      console.log(`📥 Response data:`, data);
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to accept ride");
+      }
+
+      console.log("✅ Ride accepted successfully:", data);
+      toast.success("Ride accepted! Passenger has been notified.");
+
+      setShowRideRequest(false);
+      setShowConfirmRide(true);
+    } catch (error) {
+      console.error("❌ Accept ride error:", error);
+      toast.error(error.message || "Failed to accept ride");
+    }
   };
 
   const handleIgnoreRide = (rideId) => {
