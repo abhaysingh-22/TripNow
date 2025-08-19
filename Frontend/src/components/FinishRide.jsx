@@ -70,7 +70,7 @@ function FinishRide({ rideData, onClose, onFinish }) {
           <div className="ml-auto text-right">
             <p className="text-xs text-gray-500">Earning</p>
             <p className="font-bold text-green-600">
-              ${rideData.amount.toFixed(2)}
+              ₹{rideData.amount.toFixed(2)}
             </p>
           </div>
         </div>
