@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 const ConfirmRidePopup = ({ ride, onConfirm, onCancel }) => {
   const navigate = useNavigate();
@@ -93,12 +94,89 @@ const ConfirmRidePopup = ({ ride, onConfirm, onCancel }) => {
     if (!showOtpInput) {
       setShowOtpInput(true);
     } else if (otp.length === 4) {
-      // Validate OTP (in a real app)
-      if (onConfirm) {
-        onConfirm(rideData.id, otp);
+      verifyOtpAndStartRide();
+    }
+  };
+
+  const verifyOtpAndStartRide = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const rideId = rideData._id || rideData.id;
+
+      console.log("🔍 OTP Verification Debug:");
+      console.log("Token exists:", !!token);
+      console.log("Ride ID:", rideId);
+      console.log("OTP entered:", otp);
+      console.log("Ride data:", rideData);
+      console.log("Request payload:", { rideId, otp });
+
+      if (!rideId) {
+        throw new Error("No ride ID found");
       }
-      // Navigate to the CaptainRiding page
+      if (!otp || otp.length !== 4) {
+        throw new Error("Please enter a valid 4-digit OTP");
+      }
+      if (!token) {
+        throw new Error("Authentication token not found");
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}/api/rides/start`,
+
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ rideId, otp }),
+        }
+      );
+
+      console.log("📥 Response status:", response.status);
+      console.log(
+        "📥 Response headers:",
+        Object.fromEntries(response.headers.entries())
+      );
+
+      const data = await response.json();
+      console.log("📥 Response data:", data);
+
+      if (!response.ok) {
+        const errorMessage =
+          data.error ||
+          data.message ||
+          data.details?.[0]?.msg ||
+          `HTTP ${response.status}: Failed to start ride`;
+        console.error("❌ Backend error details:", data);
+        throw new Error(data.message || "Failed to start ride");
+      }
+
+      console.log("Ride started successfully:", data);
+      toast.success("Ride started successfully!");
       navigate("/captain-riding");
+    } catch (error) {
+      console.error("❌ OTP verification failed:", error);
+      console.error("❌ Error stack:", error.stack);
+
+      // ✅ Show specific error message to user
+      if (error.message.includes("Invalid OTP")) {
+        toast.error("Invalid OTP. Please check with passenger.");
+      } else if (
+        error.message.includes("authentication") ||
+        error.message.includes("token")
+      ) {
+        toast.error("Please login again.");
+      } else if (error.message.includes("not found")) {
+        toast.error("Ride not found. Please try again.");
+      } else if (error.message.includes("status")) {
+        toast.error(
+          "Ride is not ready to start. Please accept the ride first."
+        );
+      } else {
+        toast.error(error.message || "Failed to start ride");
+      }
+      setOtp("");
     }
   };
 
