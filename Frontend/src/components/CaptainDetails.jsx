@@ -1,23 +1,15 @@
 // CaptainDetails.jsx - Captain profile and statistics component
 // This component handles captain's online/offline status with localStorage persistence
 // Features: Responsive design, smooth animations, state management
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { motion } from "framer-motion";
+import { CaptainContext } from "../context/CaptainContext.jsx"; // ✅ Add import
 
 function CaptainDetails({
   isOnline: propIsOnline,
   setIsOnline: propSetIsOnline,
 }) {
-  // Mock captain data - in production this comes from API
-  const [captainData] = useState({
-    name: "John Doe",
-    photo: "https://randomuser.me/api/portraits/men/34.jpg",
-    earningsToday: 245.5,
-    hoursOnline: 6.5,
-    distanceTravelled: 78.3,
-    totalRides: 12,
-    rating: 4.8,
-  });
+  const { captain } = useContext(CaptainContext);
 
   // Local state with localStorage persistence for offline status
   // This ensures the captain's status survives page refresh
@@ -58,37 +50,115 @@ function CaptainDetails({
   };
 
   // Stats configuration for cleaner, maintainable code
-  const statsConfig = [
-    {
-      title: "HOURS ONLINE",
-      value: `${captainData.hoursOnline} hrs`,
-      icon: "clock",
-      bgColor: "bg-yellow-100",
-      iconColor: "text-yellow-500",
-    },
-    {
-      title: "DISTANCE",
-      value: `${captainData.distanceTravelled} km`,
-      icon: "map",
-      bgColor: "bg-green-100",
-      iconColor: "text-green-500",
-    },
-    {
-      title: "TOTAL RIDES",
-      value: captainData.totalRides,
-      icon: "users",
-      bgColor: "bg-yellow-100",
-      iconColor: "text-yellow-500",
-    },
-    {
-      title: "STATUS",
-      value: isOnline ? "Active" : "Inactive",
-      icon: isOnline ? "check" : "x",
-      bgColor: isOnline ? "bg-green-100" : "bg-red-100",
-      iconColor: isOnline ? "text-green-500" : "text-red-500",
-      valueColor: isOnline ? "text-green-500" : "text-red-500",
-    },
-  ];
+  const [captainStats, setCaptainStats] = useState({
+    earningsToday: 0,
+    hoursOnline: 0,
+    distanceTravelled: 0,
+    totalRides: 0,
+  });
+
+  // ✅ Fetch real captain statistics (keep existing useEffect)
+  useEffect(() => {
+    const fetchCaptainStats = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(
+          `${import.meta.env.VITE_BASE_URL}/api/captains/stats`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          setCaptainStats({
+            earningsToday: data.stats.today.earnings,
+            hoursOnline: data.stats.today.hoursOnline,
+            distanceTravelled: data.stats.today.distance,
+            totalRides: data.stats.career.totalRides,
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching captain stats:", error);
+      }
+    };
+
+    if (captain) {
+      fetchCaptainStats();
+    }
+  }, [captain]);
+
+  // ✅ Use useMemo instead of useState for captainData
+  const captainData = React.useMemo(() => {
+    if (captain) {
+      return {
+        name: captain.fullName
+          ? `${captain.fullName.firstName} ${
+              captain.fullName.lastName || ""
+            }`.trim()
+          : captain.email || "Captain",
+        photo:
+          captain.photo || "https://randomuser.me/api/portraits/men/34.jpg",
+        rating: captain.rating || 4.8,
+        email: captain.email,
+        vehicleInfo: captain.vehicle
+          ? {
+              type: captain.vehicle.typeofVehicle || "car",
+              numberPlate: captain.vehicle.numberPlate || "N/A",
+              color: captain.vehicle.color || "N/A",
+              capacity: captain.vehicle.capacity || "N/A",
+            }
+          : null,
+      };
+    }
+
+    return {
+      name: "John Doe",
+      photo: "https://randomuser.me/api/portraits/men/34.jpg",
+      rating: 4.8,
+    };
+  }, [captain]);
+
+  // ✅ Add statsConfig array that depends on captainStats
+  const statsConfig = React.useMemo(
+    () => [
+      {
+        title: "Hours Online",
+        value: `${captainStats.hoursOnline}h`,
+        icon: "clock",
+        bgColor: "bg-blue-100",
+        iconColor: "text-blue-600",
+        valueColor: "text-blue-700",
+      },
+      {
+        title: "Distance",
+        value: `${captainStats.distanceTravelled.toFixed(1)} km`,
+        icon: "map",
+        bgColor: "bg-green-100",
+        iconColor: "text-green-600",
+        valueColor: "text-green-700",
+      },
+      {
+        title: "Total Rides",
+        value: captainStats.totalRides.toString(),
+        icon: "users",
+        bgColor: "bg-purple-100",
+        iconColor: "text-purple-600",
+        valueColor: "text-purple-700",
+      },
+      {
+        title: "Status",
+        value: isOnline ? "Online" : "Offline",
+        icon: isOnline ? "check" : "x",
+        bgColor: isOnline ? "bg-green-100" : "bg-red-100",
+        iconColor: isOnline ? "text-green-600" : "text-red-600",
+        valueColor: isOnline ? "text-green-700" : "text-red-700",
+      },
+    ],
+    [captainStats, isOnline]
+  );
 
   // Reusable icon component to reduce code duplication
   const IconComponent = ({ type, className }) => {
@@ -154,12 +224,11 @@ function CaptainDetails({
       animate="show"
       className="p-3 sm:p-4 lg:p-6 pb-4 sm:pb-6 bg-white"
     >
-      {/* Captain Profile Header - Responsive layout */}
+      {/* ✅ Show real captain name */}
       <motion.div
         variants={animations.item}
         className="flex items-center justify-between mb-4 sm:mb-5"
       >
-        {/* Profile information with online status indicator */}
         <div className="flex items-center">
           <div className="relative">
             <img
@@ -169,7 +238,7 @@ function CaptainDetails({
                 isOnline ? "border-yellow-400" : "border-red-400"
               }`}
             />
-            {/* Online status dot indicator */}
+            {/* Online status indicator */}
             <div
               className={`absolute -bottom-1 -right-1 p-1 rounded-full border-2 border-white ${
                 isOnline ? "bg-green-500" : "bg-red-500"
@@ -185,11 +254,14 @@ function CaptainDetails({
             </div>
           </div>
 
-          {/* Captain name and rating */}
           <div className="ml-3">
             <h2 className="font-bold text-gray-800 text-sm sm:text-base">
-              {captainData.name}
+              {captainData.name} {/* ✅ Real captain name */}
             </h2>
+            {/* ✅ Show email if available */}
+            {captainData.email && (
+              <p className="text-xs text-gray-500">{captainData.email}</p>
+            )}
             <div className="flex items-center">
               {/* Star rating display */}
               {[...Array(5)].map((_, i) => (
@@ -242,7 +314,7 @@ function CaptainDetails({
               Today's Earnings
             </p>
             <p className="text-xl sm:text-2xl font-bold">
-              ₹{captainData.earningsToday.toFixed(2)}
+              ₹{captainStats.earningsToday.toFixed(2)}
             </p>
           </div>
           {/* Earnings icon */}
