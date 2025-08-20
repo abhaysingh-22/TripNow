@@ -4,6 +4,7 @@ import {
   loginCaptain,
   getCaptainProfile,
   logoutCaptain,
+  getCaptainStats,
 } from "../controllers/captain.controller.js";
 const router = Router();
 import { body } from "express-validator";
@@ -45,5 +46,7 @@ router.post(
 router.get("/profile", authCaptain, getCaptainProfile);
 
 router.get("/logout", authCaptain, logoutCaptain);
+
+router.get("/stats", authCaptain, getCaptainStats);
 
 export default router;
