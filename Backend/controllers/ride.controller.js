@@ -346,9 +346,91 @@ const acceptRide = async (req, res) => {
   }
 };
 
+const startRide = async (req, res) => {
+  console.log("🔍 START RIDE DEBUG:");
+  console.log("Request body:", req.body);
+  console.log("Captain ID:", req.captain?._id);
+
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    console.log("❌ Validation errors:", errors.array());
+    return res.status(400).json({
+      error: "Validation failed",
+      details: errors.array(),
+    });
+  }
+
+  const { rideId, otp } = req.body;
+  const captainId = req.captain._id;
+
+  try {
+    console.log(`🎯 Processing ride start: ${rideId} with OTP: ${otp}`);
+
+    // Find ride with OTP
+    const ride = await Ride.findById(rideId).select("+otp");
+
+    if (!ride) {
+      return res.status(404).json({ error: "Ride not found" });
+    }
+
+    console.log("✅ Ride found:", {
+      rideId: ride._id,
+      status: ride.status,
+      captainId: ride.captainId,
+      storedOtp: ride.otp, // ✅ Log stored OTP
+      providedOtp: otp, // ✅ Log provided OTP
+      otpMatch: ride.otp === otp, // ✅ Log if they match
+    });
+
+    if (ride.captainId.toString() !== captainId.toString()) {
+      return res
+        .status(403)
+        .json({ error: "You are not assigned to this ride" });
+    }
+
+    if (ride.status !== "accepted") {
+      return res.status(400).json({
+        error: `Ride is not in accepted status. Current status: ${ride.status}`,
+      });
+    }
+
+    // ✅ More detailed OTP verification
+    console.log("🔑 OTP Verification:");
+    console.log("Provided OTP:", otp, typeof otp);
+    console.log("Stored OTP:", ride.otp, typeof ride.otp);
+    console.log("OTP Match:", ride.otp === otp);
+
+    // Verify OTP
+    if (ride.otp !== otp) {
+      return res
+        .status(400)
+        .json({ error: "Invalid OTP. Please check with passenger." });
+    }
+
+    // Update ride status
+    const updatedRide = await Ride.findByIdAndUpdate(
+      rideId,
+      { status: "in-progress" },
+      { new: true }
+    );
+
+    console.log(`✅ Ride ${rideId} started successfully`);
+
+    res.status(200).json({
+      success: true,
+      message: "Ride started successfully",
+      ride: updatedRide,
+    });
+  } catch (error) {
+    console.error("❌ Start ride error:", error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
 export default {
   createRide,
   getFare,
   confirmRide,
   acceptRide,
+  startRide,
 };
