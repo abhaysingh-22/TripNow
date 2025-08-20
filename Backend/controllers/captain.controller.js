@@ -123,4 +123,87 @@ const logoutCaptain = async (req, res) => {
   }
 };
 
-export { registerCaptain, loginCaptain, getCaptainProfile, logoutCaptain };
+const getCaptainStats = async (req, res) => {
+  try {
+    const captainId = req.captain._id;
+
+    // ✅ Calculate real statistics from rides
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const stats = await Ride.aggregate([
+      {
+        $match: {
+          captainId: mongoose.Types.ObjectId(captainId),
+          createdAt: { $gte: today },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalEarnings: { $sum: "$fare" },
+          totalRides: { $sum: 1 },
+          totalDistance: { $sum: "$distance" },
+        },
+      },
+    ]);
+
+    const todayStats = stats[0] || {
+      totalEarnings: 0,
+      totalRides: 0,
+      totalDistance: 0,
+    };
+
+    // ✅ Get total career stats
+    const careerStats = await Ride.aggregate([
+      {
+        $match: {
+          captainId: mongoose.Types.ObjectId(captainId),
+          status: "completed",
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalCareerRides: { $sum: 1 },
+          totalCareerEarnings: { $sum: "$fare" },
+          totalCareerDistance: { $sum: "$distance" },
+        },
+      },
+    ]);
+
+    const career = careerStats[0] || {
+      totalCareerRides: 0,
+      totalCareerEarnings: 0,
+      totalCareerDistance: 0,
+    };
+
+    res.status(200).json({
+      success: true,
+      stats: {
+        today: {
+          earnings: todayStats.totalEarnings,
+          rides: todayStats.totalRides,
+          distance: todayStats.totalDistance,
+          hoursOnline: 0, // You can track this separately
+        },
+        career: {
+          totalRides: career.totalCareerRides,
+          totalEarnings: career.totalCareerEarnings,
+          totalDistance: career.totalCareerDistance,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("❌ Error fetching captain stats:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export {
+  registerCaptain,
+  loginCaptain,
+  getCaptainProfile,
+  logoutCaptain,
+  getCaptainStats,
+};
