@@ -216,8 +216,11 @@ function Home() {
 
         console.log("✅ Ride confirmed:", data);
 
-        // Store the ride data including OTP
-        setCurrentRide(data.ride);
+        setCurrentRide({
+          ...data.ride,
+          _id: data.ride._id, // ✅ Use the ride ID from confirmRide response
+          otp: data.ride.otp, // ✅ Use the OTP from confirmRide response
+        });
 
         if (data.ride?.otp) {
           setUserOTP(data.ride.otp);
@@ -225,11 +228,7 @@ function Home() {
           console.log("✅ OTP set:", data.ride.otp);
         }
 
-        // ✅ Use the hook functions instead of undefined state setters
-        // Move to looking for driver state using hook functions
-        handleConfirmPickup(); // This should transition to looking for driver state
-
-        // ✅ Show simple success message without OTP (OTP will be shown persistently)
+        handleConfirmPickup();
         toast.success("Ride request sent to nearby drivers!", {
           duration: 3000,
         });
