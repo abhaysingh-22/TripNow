@@ -80,4 +80,18 @@ router.post(
   authCaptain,
   rideController.acceptRide
 );
+
+router.post(
+  "/start",
+  [
+    body("rideId").isMongoId().withMessage("Valid ride ID is required"),
+    body("otp")
+      .isString()
+      .isLength({ min: 4, max: 4 })
+      .withMessage("OTP must be 4 digits"),
+  ],
+  authCaptain,
+  rideController.startRide
+);
+
 export default router;
