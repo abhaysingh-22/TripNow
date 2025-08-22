@@ -18,7 +18,8 @@ export const useRideManagement = () => {
   const [fareCheckSelectedRide, setFareCheckSelectedRide] = useState(null);
 
   // Fare calculation hook
-  const { fares, isLoadingFares, calculateFares, clearFares, getFareForRide } = useFareCalculation();
+  const { fares, isLoadingFares, calculateFares, clearFares, getFareForRide } =
+    useFareCalculation();
 
   // Ride types data
   const rideTypes = [
@@ -80,19 +81,21 @@ export const useRideManagement = () => {
       }
 
       setIsSearching(true);
-      
+
       // Calculate fares for all vehicle types
-      calculateFares(currentPickup, currentDestination, rideTypes).then(() => {
-        setTimeout(() => {
-          setIsSearching(false);
-          setShowRideOptions(true);
-        }, 2000);
-      }).catch(() => {
-        setTimeout(() => {
-          setIsSearching(false);
-          setShowRideOptions(true);
-        }, 2000);
-      });
+      calculateFares(currentPickup, currentDestination, rideTypes)
+        .then(() => {
+          setTimeout(() => {
+            setIsSearching(false);
+            setShowRideOptions(true);
+          }, 2000);
+        })
+        .catch(() => {
+          setTimeout(() => {
+            setIsSearching(false);
+            setShowRideOptions(true);
+          }, 2000);
+        });
     },
     [hasActiveRide, calculateFares, rideTypes]
   );
@@ -101,21 +104,22 @@ export const useRideManagement = () => {
   const confirmRide = useCallback((paymentMethod) => {
     setSelectedPaymentMethod(paymentMethod);
     setShowLookingForDriver(true);
-
-    const searchTimeout = setTimeout(() => {
-      setShowLookingForDriver(false);
-      setShowWaitingForDriver(true);
-      toast.success("Driver found! Driver is on the way");
-
-      setTimeout(() => {
-        setShowWaitingForDriver(false);
-        setShowRiding(true);
-        toast.success("Trip started! Enjoy your ride");
-      }, 5000);
-    }, 3000);
-
-    setDriverSearchTimeout(searchTimeout);
   }, []);
+
+  //   const searchTimeout = setTimeout(() => {
+  //     setShowLookingForDriver(false);
+  //     setShowWaitingForDriver(true);
+  //     toast.success("Driver found! Driver is on the way");
+
+  //     setTimeout(() => {
+  //       setShowWaitingForDriver(false);
+  //       setShowRiding(true);
+  //       toast.success("Trip started! Enjoy your ride");
+  //     }, 5000);
+  //   }, 3000);
+
+  //   setDriverSearchTimeout(searchTimeout);
+  // }, []);
 
   // Handle vehicle selection
   const handleVehicleSelect = useCallback(
@@ -211,7 +215,7 @@ export const useRideManagement = () => {
     hasActiveRide,
     fareCheckSelectedRide,
     rideTypes,
-    
+
     // Fare-related states and functions
     fares,
     isLoadingFares,
@@ -229,6 +233,8 @@ export const useRideManagement = () => {
     handleGoHome,
     handleGoBackToRide,
     handleCancelRiding,
+    setShowLookingForDriver,
+    setShowWaitingForDriver,
 
     // Setters (for external control)
     setShowRideOptions,
