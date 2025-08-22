@@ -191,6 +191,31 @@ const CaptainHome = () => {
       console.log("✅ Ride accepted successfully:", data);
       toast.success("Ride accepted! Passenger has been notified.");
 
+      if (sendMessage && rideData) {
+        sendMessage("ride-accepted-by-captain", {
+          rideId: rideId,
+          captain: {
+            _id: captain._id,
+            name: captain.fullName
+              ? `${captain.fullName.firstName} ${
+                  captain.fullName.lastName || ""
+                }`.trim()
+              : captain.email,
+            photo:
+              captain.photo || "https://randomuser.me/api/portraits/men/34.jpg",
+            rating: captain.rating || 4.8,
+            totalRides: captain.totalRides || 1000,
+            vehicle: {
+              model: captain.vehicle?.model || "Swift",
+              color: captain.vehicle?.color || "White",
+              numberPlate: captain.vehicle?.numberPlate || "MH 12 AB 1234",
+              type: captain.vehicle?.typeofVehicle || rideData?.vehicleType || "Car",
+            },
+          },
+          estimatedArrival: "3 min", // ✅ This will be used in WaitingForDriver
+          message: "Driver found! Your ride has been accepted.",
+        });
+      }
       setShowRideRequest(false);
       setShowConfirmRide(true);
     } catch (error) {
