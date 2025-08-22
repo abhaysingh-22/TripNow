@@ -138,6 +138,11 @@ function Home() {
   const [showOTP, setShowOTP] = useState(false);
   const [userOTP, setUserOTP] = useState(null);
 
+  // Around line 90-100, ADD these state variables:
+
+  const [showLookingForDriver, setShowLookingForDriver] = useState(false);
+  const [showWaitingForDriver, setShowWaitingForDriver] = useState(false);
+
   // Custom hooks
   const {
     suggestions,
@@ -154,8 +159,6 @@ function Home() {
     isSearching,
     showConfirmRide,
     selectedVehicle,
-    showLookingForDriver,
-    showWaitingForDriver,
     selectedPaymentMethod,
     showRiding,
     hasActiveRide,
@@ -242,10 +245,11 @@ function Home() {
     [user, handleConfirmPickup] // ✅ Add handleConfirmPickup to dependencies
   );
 
-  // Add socket listener for ride acceptance
+  // Around line 247-290, REPLACE both socket listeners with this single one:
+
   useEffect(() => {
     const cleanup = onMessage("ride-accepted", (data) => {
-      console.log("🎉 Ride accepted by captain:", data);
+      console.log("🎉 Captain accepted ride:", data);
       console.log("🔑 OTP from socket:", data.otp);
 
       // Update current ride with captain info
@@ -253,27 +257,38 @@ function Home() {
         ...prev,
         captain: data.captain,
         status: "accepted",
+        estimatedArrival: data.estimatedArrival || "3 min",
       }));
 
-      // ✅ Show persistent OTP instead of toast
+      // Handle OTP
       if (data.otp) {
         setUserOTP(data.otp);
         setShowOTP(true);
         console.log("✅ OTP updated from socket:", data.otp);
       }
 
+      // ✅ TRIGGER PANEL TRANSITIONS
+      setShowLookingForDriver(true);
+      setShowWaitingForDriver(false);
+      console.log("✅ Showing LookingForDriver panel");
+
+      // ✅ After 3 seconds, switch to WaitingForDriver
+      setTimeout(() => {
+        setShowLookingForDriver(false);
+        setShowWaitingForDriver(true);
+        console.log("✅ Switched to WaitingForDriver panel");
+      }, 7000);
+
       // Show success message
       toast.success("Driver found! Your ride has been accepted.", {
         duration: 5000,
       });
-
-      // Move to waiting for driver state (use hook function)
-      // Note: You might need to call the appropriate hook function here
-      // Check what function from useRideManagement moves to waiting state
     });
 
     return cleanup;
   }, [onMessage]);
+
+  // ✅ REMOVE the second useEffect with "ride-accepted-by-captain" entirely
 
   const handleInputChange = useCallback(
     (value, inputType) => {
@@ -485,6 +500,52 @@ function Home() {
         )}
       </AnimatePresence>
 
+      {/* ✅ ADD THIS SECTION - Ride Status Components (Outside Side Panel) */}
+      <AnimatePresence mode="wait">
+        {showLookingForDriver && (
+          <motion.div
+            initial={{ opacity: 0, y: "100%" }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="fixed inset-0 z-60 bg-white"
+          >
+            <LookingForDriver
+              selectedVehicle={selectedVehicle}
+              pickup={pickup}
+              destination={destination}
+              fare={getFareForRide(selectedVehicle?.id)?.fare}
+              selectedPayment={selectedPaymentMethod}
+              onBack={() => setShowLookingForDriver(false)}
+              onCancel={handleCancelLooking}
+              driverFound={currentRide?.status === "accepted"}
+              captainInfo={currentRide?.captain}
+            />
+          </motion.div>
+        )}
+
+        {showWaitingForDriver && (
+          <motion.div
+            initial={{ opacity: 0, y: "100%" }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="fixed inset-0 z-60 bg-white"
+          >
+            <WaitingForDriver
+              selectedVehicle={selectedVehicle}
+              pickup={pickup}
+              destination={destination}
+              fare={getFareForRide(selectedVehicle?.id)?.fare}
+              selectedPayment={selectedPaymentMethod}
+              onBack={() => setShowWaitingForDriver(false)}
+              onCancel={handleCancelWaiting}
+              captainInfo={currentRide?.captain}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Side/Bottom Panel */}
       <AnimatePresence mode="wait">
         {isSidePanelOpen && (
@@ -567,27 +628,7 @@ function Home() {
 
               {/* Dynamic Content Area */}
               {showRideOptions ? (
-                showWaitingForDriver ? (
-                  <WaitingForDriver
-                    selectedVehicle={selectedVehicle}
-                    pickup={pickup}
-                    destination={destination}
-                    fare={getFareForRide(selectedVehicle?.id)?.fare}
-                    selectedPayment={selectedPaymentMethod}
-                    onBack={() => setShowWaitingForDriver(false)}
-                    onCancel={handleCancelWaiting}
-                  />
-                ) : showLookingForDriver ? (
-                  <LookingForDriver
-                    selectedVehicle={selectedVehicle}
-                    pickup={pickup}
-                    destination={destination}
-                    fare={getFareForRide(selectedVehicle?.id)?.fare}
-                    selectedPayment={selectedPaymentMethod}
-                    onBack={() => setShowLookingForDriver(false)}
-                    onCancel={handleCancelLooking}
-                  />
-                ) : showConfirmRide ? (
+                showConfirmRide ? (
                   <ConfirmRide
                     selectedVehicle={selectedVehicle}
                     pickup={pickup}
