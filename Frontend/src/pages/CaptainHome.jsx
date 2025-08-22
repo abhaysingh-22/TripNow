@@ -8,6 +8,7 @@ import RidePopup from "../components/RidePopup";
 import ConfirmRidePopup from "../components/ConfirmRidePopup";
 import { useSocket } from "../context/SocketContext.jsx";
 import { CaptainContext } from "../context/CaptainContext.jsx";
+import LoadingScreen from "../components/LoadingScreen.jsx";
 
 const CaptainHome = () => {
   // UI State Management
@@ -16,6 +17,12 @@ const CaptainHome = () => {
   const [showRideRequest, setShowRideRequest] = useState(false);
   const [showConfirmRide, setShowConfirmRide] = useState(false);
   const [rideData, setRideData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [isOnline, setIsOnline] = useState(() => {
+    const saved = localStorage.getItem("captainOnlineStatus");
+    return saved ? JSON.parse(saved) : true;
+  });
 
   // Video reference for zoom functionality
   const videoRef = useRef(null);
@@ -24,12 +31,19 @@ const CaptainHome = () => {
   const { onMessage, sendMessage } = useSocket();
 
   useEffect(() => {
-    const cleanup = onMessage("ride-request", (data) => {
-      console.log("🎯 CAPTAIN HOME - Received ride request:", data);
-      console.log("👤 User data received:", data.user);
-      console.log("🚗 Ride data received:", data.ride);
-      console.log("🆔 Ride ID:", data.ride?._id);
+    const LoadingTimer = setTimeout(() => {
+      setIsLoading(false);
+    }, 3000);
 
+    return () => clearTimeout(LoadingTimer);
+  }, []);
+
+  useEffect(() => {
+    const cleanup = onMessage("ride-request", (data) => {
+      if (!isOnline) {
+        console.log("Captain is offline. Ignoring ride request.");
+        return;
+      }
       // ✅ Store the complete data structure correctly
       setRideData({
         ...data.ride, // Spread the ride data
@@ -41,7 +55,7 @@ const CaptainHome = () => {
       setShowRideRequest(true);
     });
     return cleanup;
-  }, [onMessage]);
+  }, [onMessage, isOnline]);
 
   useEffect(() => {
     if (captain && sendMessage) {
@@ -51,13 +65,6 @@ const CaptainHome = () => {
       });
     }
   }, [captain, sendMessage]);
-
-  // Captain online/offline status with localStorage persistence
-  // This ensures status survives page refreshs
-  const [isOnline, setIsOnline] = useState(() => {
-    const saved = localStorage.getItem("captainOnlineStatus");
-    return saved ? JSON.parse(saved) : true;
-  });
 
   useEffect(() => {
     if (!isOnline || !captain || !sendMessage) return;
@@ -110,6 +117,16 @@ const CaptainHome = () => {
       videoRef.current.style.transition = "transform 0.3s ease";
     }
   }, [mapZoom]);
+
+  if (isLoading) {
+    return (
+      <LoadingScreen
+        title="Welcome Captain"
+        subtitle="Ready to serve riders..."
+        loadingText="Preparing your Dashboard..."
+      />
+    );
+  }
 
   // Event Handlers
   const handleLogout = () => {
