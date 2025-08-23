@@ -106,21 +106,6 @@ export const useRideManagement = () => {
     setShowLookingForDriver(true);
   }, []);
 
-  //   const searchTimeout = setTimeout(() => {
-  //     setShowLookingForDriver(false);
-  //     setShowWaitingForDriver(true);
-  //     toast.success("Driver found! Driver is on the way");
-
-  //     setTimeout(() => {
-  //       setShowWaitingForDriver(false);
-  //       setShowRiding(true);
-  //       toast.success("Trip started! Enjoy your ride");
-  //     }, 5000);
-  //   }, 3000);
-
-  //   setDriverSearchTimeout(searchTimeout);
-  // }, []);
-
   // Handle vehicle selection
   const handleVehicleSelect = useCallback(
     (ride) => {
