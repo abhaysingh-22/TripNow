@@ -221,6 +221,9 @@ export const useRideManagement = () => {
     setShowLookingForDriver,
     setShowWaitingForDriver,
 
+    setShowLookingForDriver,
+    setShowWaitingForDriver,
+
     // Setters (for external control)
     setShowRideOptions,
     setSelectedRide,
