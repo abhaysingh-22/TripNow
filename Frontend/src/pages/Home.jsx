@@ -69,39 +69,87 @@ const OTPDisplay = ({ otp, onClose }) => {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="fixed top-24 left-1/2 transform -translate-x-1/2 z-[70] bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-4 rounded-2xl shadow-2xl border-2 border-green-400 min-w-[300px]"
-      style={{ zIndex: 70 }} // Ensure it's above everything
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-70 flex items-center justify-center p-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
     >
-      <div className="flex items-center space-x-3">
-        <div className="bg-white/20 rounded-full p-2 animate-pulse">
-          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              fillRule="evenodd"
-              d="M18 8a6 6 0 01-7.743 5.743L10 14l-2 1-1 1H4v-1l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z"
-              clipRule="evenodd"
-            />
-          </svg>
+      <motion.div
+        className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl"
+        initial={{ scale: 0.8, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.8, opacity: 0, y: 20 }}
+        transition={{ type: "spring", damping: 25 }}
+      >
+        {/* Header */}
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg
+              className="w-8 h-8 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-gray-800 mb-2">
+            Your Ride OTP
+          </h3>
+          <p className="text-sm text-gray-600">Share this code with your driver</p>
         </div>
-        <div className="flex-1">
-          <p className="font-bold text-xl">Your OTP: {otp}</p>
-          <p className="text-sm opacity-90">Show this to your driver</p>
+
+        {/* OTP Display */}
+        <div className="bg-gray-50 rounded-xl p-4 mb-6">
+          <div className="text-center">
+            <p className="text-sm text-gray-500 mb-2">One-Time Password</p>
+            <div className="text-4xl font-bold text-blue-600 tracking-wider font-mono">
+              {otp}
+            </div>
+          </div>
         </div>
-        <button
+
+        {/* Instructions */}
+        <div className="bg-blue-50 rounded-lg p-4 mb-6">
+          <div className="flex items-start">
+            <svg
+              className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <div className="text-sm">
+              <p className="text-blue-800 font-medium mb-1">Important:</p>
+              <p className="text-blue-700">
+                Show this 4-digit code to your driver when they arrive. Keep it
+                safe!
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Close Button */}
+        <motion.button
           onClick={onClose}
-          className="bg-white/20 hover:bg-white/30 rounded-full p-2 transition-colors ml-2"
+          className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
         >
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              fillRule="evenodd"
-              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-              clipRule="evenodd"
-            />
-          </svg>
-        </button>
-      </div>
+          Got it
+        </motion.button>
+      </motion.div>
     </motion.div>
   );
 };
@@ -159,6 +207,8 @@ function Home() {
     isSearching,
     showConfirmRide,
     selectedVehicle,
+    // showLookingForDriver,
+    // showWaitingForDriver,
     selectedPaymentMethod,
     showRiding,
     hasActiveRide,
@@ -178,6 +228,8 @@ function Home() {
     handleGoHome,
     handleGoBackToRide,
     handleCancelRiding,
+    // setShowLookingForDriver,
+    // setShowWaitingForDriver,
   } = useRideManagement();
 
   // Input change handler
@@ -248,7 +300,7 @@ function Home() {
   // Around line 247-290, REPLACE both socket listeners with this single one:
 
   useEffect(() => {
-    const cleanup = onMessage("ride-accepted", (data) => {
+    const cleanup = onMessage("ride-accepted-by-captain", (data) => {
       console.log("🎉 Captain accepted ride:", data);
       console.log("🔑 OTP from socket:", data.otp);
 
@@ -286,7 +338,7 @@ function Home() {
     });
 
     return cleanup;
-  }, [onMessage]);
+  }, [onMessage, setShowLookingForDriver, setShowWaitingForDriver]);
 
   // ✅ REMOVE the second useEffect with "ride-accepted-by-captain" entirely
 
