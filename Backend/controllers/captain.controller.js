@@ -2,6 +2,8 @@ import BlacklistToken from "../models/blacklistToken.model.js";
 import Captain from "../models/captain.model.js";
 import { createCaptain } from "../services/captain.service.js";
 import { validationResult } from "express-validator";
+import Ride from "../models/ride.model.js";
+import jwt from "jsonwebtoken";
 
 const registerCaptain = async (req, res) => {
   const errors = validationResult(req);
@@ -127,76 +129,74 @@ const getCaptainStats = async (req, res) => {
   try {
     const captainId = req.captain._id;
 
-    // ✅ Calculate real statistics from rides
+    console.log(`📊 Fetching stats for captain: ${captainId}`);
+
+    // Get captain data with updated stats
+    const captain = await Captain.findById(captainId).select(
+      "totalRides totalEarnings totalDistance"
+    );
+
+    if (!captain) {
+      return res.status(404).json({ error: "Captain not found" });
+    }
+
+    // Get today's date range
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const startOfToday = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    );
+    const endOfToday = new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000);
 
-    const stats = await Ride.aggregate([
-      {
-        $match: {
-          captainId: mongoose.Types.ObjectId(captainId),
-          createdAt: { $gte: today },
-        },
+    // Get today's completed rides for this captain
+    const todayRides = await Ride.find({
+      captainId: captainId,
+      status: "completed",
+      completedAt: {
+        $gte: startOfToday,
+        $lt: endOfToday,
       },
-      {
-        $group: {
-          _id: null,
-          totalEarnings: { $sum: "$fare" },
-          totalRides: { $sum: 1 },
-          totalDistance: { $sum: "$distance" },
-        },
-      },
-    ]);
+    });
 
-    const todayStats = stats[0] || {
-      totalEarnings: 0,
-      totalRides: 0,
-      totalDistance: 0,
+    // Calculate today's stats
+    const todayEarnings = todayRides.reduce(
+      (total, ride) => total + (ride.fare || 0),
+      0
+    );
+    const todayDistance = todayRides.reduce(
+      (total, ride) => total + (ride.distance || 0),
+      0
+    );
+    const todayRidesCount = todayRides.length;
+
+    // Calculate hours online (simplified - you can implement actual tracking)
+    const hoursOnline =
+      todayRidesCount > 0 ? Math.max(todayRidesCount * 0.5, 2) : 0;
+
+    const stats = {
+      today: {
+        earnings: todayEarnings,
+        hoursOnline: hoursOnline,
+        distance: todayDistance,
+        // rides: todayRidesCount,
+      },
+      career: {
+        totalRides: captain.totalRides || 0,
+        totalEarnings: captain.totalEarnings || 0,
+        totalDistance: captain.totalDistance || 0,
+      },
     };
 
-    // ✅ Get total career stats
-    const careerStats = await Ride.aggregate([
-      {
-        $match: {
-          captainId: mongoose.Types.ObjectId(captainId),
-          status: "completed",
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          totalCareerRides: { $sum: 1 },
-          totalCareerEarnings: { $sum: "$fare" },
-          totalCareerDistance: { $sum: "$distance" },
-        },
-      },
-    ]);
-
-    const career = careerStats[0] || {
-      totalCareerRides: 0,
-      totalCareerEarnings: 0,
-      totalCareerDistance: 0,
-    };
+    console.log("✅ Captain stats fetched:", stats);
 
     res.status(200).json({
       success: true,
-      stats: {
-        today: {
-          earnings: todayStats.totalEarnings,
-          rides: todayStats.totalRides,
-          distance: todayStats.totalDistance,
-          hoursOnline: 0, // You can track this separately
-        },
-        career: {
-          totalRides: career.totalCareerRides,
-          totalEarnings: career.totalCareerEarnings,
-          totalDistance: career.totalCareerDistance,
-        },
-      },
+      stats: stats,
     });
   } catch (error) {
-    console.error("❌ Error fetching captain stats:", error);
-    res.status(500).json({ error: error.message });
+    console.error("❌ Get captain stats error:", error);
+    res.status(500).json({ error: "Failed to fetch captain stats" });
   }
 };
 
