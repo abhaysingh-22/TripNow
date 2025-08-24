@@ -427,10 +427,88 @@ const startRide = async (req, res) => {
   }
 };
 
+const completeRide = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const { rideId, fare, distance, duration } = req.body;
+  const captainId = req.captain._id;
+
+  try {
+    console.log(`🏁 Completing ride: ${rideId} by captain: ${captainId}`);
+
+    // Find and update the ride
+    const ride = await Ride.findOneAndUpdate(
+      {
+        _id: rideId,
+        captainId: captainId,
+        status: { $in: ["accepted", "in-progress"] },
+      },
+      {
+        status: "completed",
+        completedAt: new Date(),
+        fare: fare,
+        distance: distance,
+        duration: duration,
+      },
+      { new: true }
+    );
+
+    if (!ride) {
+      return res.status(404).json({
+        error: "Ride not found or you're not authorized to complete it",
+      });
+    }
+
+    // ✅ Update captain's statistics
+    const updatedCaptain = await Captain.findByIdAndUpdate(captainId, {
+      $inc: {
+        totalRides: 1,
+        totalEarnings: fare,
+        totalDistance: distance,
+      },
+    });
+
+    console.log("✅ Ride completed and captain stats updated:", {
+      rideId: ride._id,
+      captainId: captainId,
+      newTotals: {
+        totalRides: updatedCaptain.totalRides,
+        totalEarnings: updatedCaptain.totalEarnings,
+        totalDistance: updatedCaptain.totalDistance,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Ride completed successfully",
+      ride: {
+        _id: ride._id,
+        status: ride.status,
+        fare: ride.fare,
+        distance: ride.distance,
+        duration: ride.duration,
+        completedAt: ride.completedAt,
+      },
+      captain: {
+        totalRides: updatedCaptain.totalRides,
+        totalEarnings: updatedCaptain.totalEarnings,
+        totalDistance: updatedCaptain.totalDistance,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Complete ride error:", error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
 export default {
   createRide,
   getFare,
   confirmRide,
   acceptRide,
   startRide,
+  completeRide,
 };
