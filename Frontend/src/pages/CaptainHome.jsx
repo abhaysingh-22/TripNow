@@ -67,6 +67,21 @@ const CaptainHome = () => {
   }, [captain, sendMessage]);
 
   useEffect(() => {
+    const cleanupJoined = onMessage("joined", (data) => {
+      console.log("✅ Successfully joined as:", data.role);
+    });
+
+    const cleanupError = onMessage("error", (error) => {
+      console.error("❌ Socket error:", error.message);
+    });
+
+    return () => {
+      cleanupJoined();
+      cleanupError();
+    };
+  }, [onMessage]);
+
+  useEffect(() => {
     if (!isOnline || !captain || !sendMessage) return;
 
     const updateLocation = () => {
