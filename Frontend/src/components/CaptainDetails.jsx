@@ -88,6 +88,18 @@ function CaptainDetails({
     if (captain) {
       fetchCaptainStats();
     }
+
+    const handleRideCompleted = () => {
+      console.log("🔄 Ride completed event detected, refreshing stats...");
+      fetchCaptainStats();
+    };
+
+    // Listen for custom event when ride is completed
+    window.addEventListener("rideCompleted", handleRideCompleted);
+
+    return () => {
+      window.removeEventListener("rideCompleted", handleRideCompleted);
+    };
   }, [captain]);
 
   // ✅ Use useMemo instead of useState for captainData
