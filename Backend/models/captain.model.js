@@ -23,6 +23,21 @@ const captainSchema = new moongoose.Schema({
     type: String,
     required: true,
   },
+
+  totalRide: {
+    type: Number,
+    default: 0,
+  },
+
+  totalEarnings: {
+    type: Number,
+    default: 0,
+  },
+
+  totalDistance: {
+    type: Number,
+    default: 0,
+  },
   socketId: {
     type: String,
     required: false,
