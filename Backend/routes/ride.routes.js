@@ -94,4 +94,17 @@ router.post(
   rideController.startRide
 );
 
+// ✅ CORRECT - Put all validations in the array
+router.post(
+  "/complete",
+  [
+    body("rideId").isMongoId().withMessage("Valid ride ID is required"),
+    body("fare").isNumeric().withMessage("Fare must be a number"),
+    body("distance").isNumeric().withMessage("Distance must be a number"),
+    body("duration").isNumeric().withMessage("Duration must be a number"),
+  ],
+  authCaptain,
+  rideController.completeRide
+);
+
 export default router;
