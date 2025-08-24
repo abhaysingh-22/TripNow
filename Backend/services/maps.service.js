@@ -16,6 +16,8 @@ async function getCoordinates(address) {
   if (!apiKey) throw new Error("SerpAPI key not found");
 
   const validAddress = address?.trim() || "New York, NY";
+  
+  console.log("🌍 Geocoding address:", validAddress);
 
   try {
     const response = await axios.get("https://serpapi.com/search.json", {
@@ -27,16 +29,61 @@ async function getCoordinates(address) {
       },
     });
 
-    const location = response.data.local_results?.[0];
-    if (!location?.gps_coordinates) {
-      throw new Error("No coordinates found");
+    console.log("📡 SerpAPI geocoding response:", JSON.stringify(response.data, null, 2));
+
+    // ✅ Try multiple data sources from SerpAPI response
+    let location = null;
+
+    // Method 1: Check local_results (most common)
+    if (response.data.local_results?.[0]?.gps_coordinates) {
+      location = response.data.local_results[0];
+      console.log("✅ Found coordinates in local_results");
+    }
+    // Method 2: Check place_results
+    else if (response.data.place_results?.gps_coordinates) {
+      location = response.data.place_results;
+      console.log("✅ Found coordinates in place_results");
+    }
+    // Method 3: Check search_information with coordinates
+    else if (response.data.search_information?.query_coordinates) {
+      const coords = response.data.search_information.query_coordinates;
+      console.log("✅ Found coordinates in search_information");
+      return {
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+      };
     }
 
-    return {
+    if (!location?.gps_coordinates) {
+      console.error("❌ No GPS coordinates found in any response field");
+      console.error("Available fields:", Object.keys(response.data));
+      
+      // ✅ Fallback: Try a more general search
+      if (!validAddress.includes("India")) {
+        console.log("🔄 Retrying with India suffix...");
+        return await getCoordinates(validAddress + ", India");
+      }
+      
+      throw new Error(`No coordinates found for address: ${validAddress}`);
+    }
+
+    const result = {
       latitude: location.gps_coordinates.latitude,
       longitude: location.gps_coordinates.longitude,
     };
+
+    console.log("✅ Geocoding successful:", result);
+    return result;
+
   } catch (error) {
+    console.error("❌ Geocoding error:", error.message);
+    
+    // ✅ If it's an API response error, log more details
+    if (error.response) {
+      console.error("Response status:", error.response.status);
+      console.error("Response data:", error.response.data);
+    }
+    
     throw new Error(`Geocoding failed: ${error.message}`);
   }
 }
