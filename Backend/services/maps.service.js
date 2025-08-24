@@ -1,250 +1,201 @@
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
+import axios from "axios";
 import Captain from "../models/captain.model.js";
 
-// Get the directory of the current module
+// Configure environment
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// Configure dotenv to look for .env file in the Backend directory
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 
-import axios from "axios";
 /**
- * Get coordinates (latitude, longitude) for a given address using GoMaps.pro Geocoding API.
- * @param {string} address - The address to geocode.
- * @returns {Promise<{ latitude: number, longitude: number }>} - Coordinates object.
+ * Get coordinates for an address using SerpAPI
  */
-
 async function getCoordinates(address) {
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-  if (!apiKey) {
-    throw new Error("GoMaps.pro API key not set in environment variables.");
-  }
-  // Use a default address if input is invalid
-  const validAddress =
-    address && typeof address === "string" && address.trim() !== ""
-      ? address
-      : "1600 Amphitheatre Parkway, Mountain View, CA";
-  const url = `https://maps.gomaps.pro/maps/api/geocode/json`;
+  const apiKey = process.env.SERPAPI_KEY;
+  if (!apiKey) throw new Error("SerpAPI key not found");
+
+  const validAddress = address?.trim() || "New York, NY";
 
   try {
-    const response = await axios.get(url, {
+    const response = await axios.get("https://serpapi.com/search.json", {
       params: {
-        address: validAddress,
-        key: apiKey,
+        engine: "google_maps",
+        q: validAddress,
+        api_key: apiKey,
+        type: "search",
       },
     });
-    // Check for API error or invalid status
-    const data = response.data;
-    if (data.status !== "OK") {
-      const errorMsg =
-        data.error_message || `GoMaps.pro API error: ${data.status}`;
-      throw new Error(errorMsg);
+
+    const location = response.data.local_results?.[0];
+    if (!location?.gps_coordinates) {
+      throw new Error("No coordinates found");
     }
-    const results = data.results;
-    if (results && results.length > 0) {
-      const location = results[0].geometry.location;
-      return {
-        latitude: location.lat,
-        longitude: location.lng,
-      };
-    } else {
-      throw new Error("No results found for the given address.");
-    }
+
+    return {
+      latitude: location.gps_coordinates.latitude,
+      longitude: location.gps_coordinates.longitude,
+    };
   } catch (error) {
-    throw new Error(`Failed to fetch coordinates: ${error.message}`);
+    throw new Error(`Geocoding failed: ${error.message}`);
   }
 }
-// Test the function when running this file directly (ES6 module)
-// if (fileURLToPath(import.meta.url) === process.argv[1]) {
-//     (async () => {
-//         try {
-//             const coords = await getCoordinates('1600 Amphitheatre Parkway, Mountain View, CA');
-//             console.log('Coordinates:', coords);
-//         } catch (err) {
-//             console.error('Error:', err.message);
-//         }
-//     })();
-// }
 
+/**
+ * Get distance and time between two locations using SerpAPI
+ */
 async function getDistanceTime(origin, destination) {
-  if (!origin || !destination) {
-    throw new Error("Origin and destination must be provided.");
-  }
+  const apiKey = process.env.SERPAPI_KEY;
+  if (!apiKey) throw new Error("SerpAPI key not found");
+  if (!origin || !destination)
+    throw new Error("Origin and destination required");
 
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-  if (!apiKey) {
-    throw new Error("Google Maps API key not set in environment variables.");
-  }
-
-  const url = `https://maps.gomaps.pro/maps/api/distancematrix/json`;
+  const originStr =
+    typeof origin === "object"
+      ? `${origin.latitude},${origin.longitude}`
+      : origin;
+  const destStr =
+    typeof destination === "object"
+      ? `${destination.latitude},${destination.longitude}`
+      : destination;
 
   try {
-    const response = await axios.get(url, {
+    const response = await axios.get("https://serpapi.com/search.json", {
       params: {
-        origins: origin,
-        destinations: destination,
-        key: apiKey,
-        units: "metric", // ✅ Ensure metric units
+        engine: "google_maps_directions",
+        start_addr: originStr,
+        end_addr: destStr,
+        api_key: apiKey,
       },
     });
 
-    const data = response.data;
-    if (data.status !== "OK") {
-      throw new Error(`GoMaps.pro API error: ${data.status}`);
-    }
+    const route = response.data.directions?.[0];
+    if (!route) throw new Error("No route found");
 
-    if (data.rows && data.rows.length > 0 && data.rows[0].elements.length > 0) {
-      const element = data.rows[0].elements[0];
+    const distanceInKm = route.distance / 1000;
+    const durationInMinutes = Math.round(route.duration / 60);
 
-      if (element.status !== "OK") {
-        throw new Error(`Route calculation failed: ${element.status}`);
-      }
-
-      // ✅ Extract numeric values and convert to standard units
-      const distanceInMeters = element.distance.value; // Google returns meters
-      const durationInSeconds = element.duration.value; // Google returns seconds
-
-      const distanceInKm = distanceInMeters / 1000; // Convert to km
-      const durationInMinutes = durationInSeconds / 60; // Convert to minutes
-
-      console.log("✅ Distance calculation:", {
-        original: {
-          distance: element.distance.text,
-          duration: element.duration.text,
-        },
-        converted: {
-          distanceKm: distanceInKm,
-          durationMinutes: durationInMinutes,
-        },
-      });
-
-      return {
-        distance: parseFloat(distanceInKm.toFixed(2)), // ✅ Return as number with 2 decimals
-        duration: Math.round(durationInMinutes), // ✅ Return as whole minutes
-        distanceText: element.distance.text, // Keep original text for display
-        durationText: element.duration.text, // Keep original text for display
-      };
-    } else {
-      throw new Error("No results found for the given origin and destination.");
-    }
+    return {
+      distance: parseFloat(distanceInKm.toFixed(2)),
+      duration: durationInMinutes,
+      distanceText: route.formatted_distance || `${distanceInKm.toFixed(1)} km`,
+      durationText: route.formatted_duration || `${durationInMinutes} min`,
+    };
   } catch (error) {
-    throw new Error(`Failed to fetch distance and time: ${error.message}`);
+    throw new Error(`Distance calculation failed: ${error.message}`);
   }
 }
 
+/**
+ * Get place suggestions using SerpAPI
+ */
 async function getSuggestions(input) {
-  if (!input || typeof input !== "string" || input.trim() === "") {
-    throw new Error("Input must be a non-empty string.");
-  }
+  const apiKey = process.env.SERPAPI_KEY;
+  if (!apiKey) throw new Error("SerpAPI key not found");
+  if (!input?.trim()) throw new Error("Input required");
 
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-  if (!apiKey) {
-    throw new Error("Google Maps API key not set in environment variables.");
-  }
-  const url = `https://maps.gomaps.pro/maps/api/place/autocomplete/json`;
   try {
-    const response = await axios.get(url, {
+    const response = await axios.get("https://serpapi.com/search.json", {
       params: {
-        input,
-        key: apiKey,
+        engine: "google_maps",
+        q: input.trim(),
+        api_key: apiKey,
+        type: "search",
       },
     });
-    const data = response.data;
-    if (data.status !== "OK") {
-      throw new Error(`GoMaps.pro API error: ${data.status}`);
-    }
-    return data.predictions;
+
+    const results = response.data.local_results || [];
+    return results.map((item) => ({
+      description: `${item.title}${item.address ? `, ${item.address}` : ""}`,
+      place_id: item.place_id || item.data_id || `${Date.now()}`,
+      structured_formatting: {
+        main_text: item.title || "",
+        secondary_text: item.address || "",
+      },
+    }));
   } catch (error) {
-    throw new Error(`Failed to fetch suggestions: ${error.message}`);
+    throw new Error(`Suggestions failed: ${error.message}`);
   }
 }
 
+/**
+ * Calculate distance between two coordinates using Haversine formula
+ */
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Earth's radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/**
+ * Find captains within a radius
+ */
 async function getCaptainsInRadius(latitude, longitude, radius) {
   if (!latitude || !longitude || !radius) {
-    throw new Error("Latitude, longitude, and radius must be provided.");
+    throw new Error("Latitude, longitude, and radius required");
   }
 
   try {
-    console.log("=== DEBUGGING CAPTAIN SEARCH ===");
-    console.log("Search center:", { latitude, longitude });
-    console.log("Search radius:", radius, "km");
-
-    // Get all captains (without geospatial query)
     const allCaptains = await Captain.find({
       "location.latitude": { $exists: true },
       "location.longitude": { $exists: true },
     });
 
-    console.log("All captains found:", allCaptains.length);
-
-    // Log each captain's location
-    allCaptains.forEach((captain, index) => {
-      console.log(`Captain ${index + 1} (${captain._id}):`);
-      console.log(
-        `  Location: lat=${captain.location.latitude}, lng=${captain.location.longitude}`
-      );
-      console.log(`  Name: ${captain.fullName || "N/A"}`);
-    });
-
-    // Filter by distance manually using Haversine formula
-    const captainsInRadius = allCaptains.filter((captain, index) => {
-      if (
-        !captain.location ||
-        !captain.location.latitude ||
-        !captain.location.longitude
-      ) {
-        console.log(`Captain ${index + 1}: SKIPPED - Missing location data`);
-        return false;
-      }
-
+    return allCaptains.filter((captain) => {
       const distance = calculateDistance(
         latitude,
         longitude,
         captain.location.latitude,
         captain.location.longitude
       );
-
-      console.log(`Captain ${index + 1} (${captain._id}):`);
-      console.log(`  Distance: ${distance.toFixed(2)}km`);
-      console.log(
-        `  Within radius (${radius}km)?: ${distance <= radius ? "YES" : "NO"}`
-      );
-
       return distance <= radius;
     });
-
-    console.log("=== SEARCH RESULTS ===");
-    console.log("Captains in radius:", captainsInRadius.length);
-    console.log("================================");
-
-    return captainsInRadius;
   } catch (error) {
-    console.error("Error in getCaptainsInRadius:", error);
-    throw error;
+    throw new Error(`Captain search failed: ${error.message}`);
   }
 }
 
-// Add this helper function for distance calculation
-// we are doing manual calc because MongoDB can't execute the $geoNear query because there's no geospatial index on the location field.
-function calculateDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371; // Earth's radius in kilometers
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c; // Distance in kilometers
+/**
+ * Calculate fare based on distance, duration, and vehicle type
+ */
+function calculateFare(distance, duration, vehicleType) {
+  const fares = {
+    auto: { base: 25, perKm: 12, perMin: 2 },
+    car: { base: 50, perKm: 15, perMin: 3 },
+    bike: { base: 20, perKm: 8, perMin: 1.5 },
+    motorcycle: { base: 20, perKm: 8, perMin: 1.5 },
+  };
+
+  const fare = fares[vehicleType?.toLowerCase()] || fares.car;
+  const total = fare.base + distance * fare.perKm + duration * fare.perMin;
+
+  return Math.round(total * 100) / 100;
 }
 
+/**
+ * Get fare details for a trip
+ */
 async function getFareWithDetails(pickup, dropoff, vehicleType) {
-  const trip = await mapsService.getDistanceTime(pickup, dropoff);
-  const fare = calculateFare(trip.distance, trip.duration, vehicleType);
-  return { fare, distance: trip.distance, duration: trip.duration };
+  try {
+    const trip = await getDistanceTime(pickup, dropoff);
+    const fare = calculateFare(trip.distance, trip.duration, vehicleType);
+
+    return {
+      fare,
+      distance: trip.distance,
+      duration: trip.duration,
+      distanceText: trip.distanceText,
+      durationText: trip.durationText,
+    };
+  } catch (error) {
+    throw new Error(`Fare calculation failed: ${error.message}`);
+  }
 }
 
 export default {
@@ -253,4 +204,5 @@ export default {
   getSuggestions,
   getCaptainsInRadius,
   getFareWithDetails,
+  calculateFare,
 };
