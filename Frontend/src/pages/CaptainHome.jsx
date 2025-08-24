@@ -189,7 +189,28 @@ const CaptainHome = () => {
       }
 
       console.log("✅ Ride accepted successfully:", data);
-      toast.success("Ride accepted! Passenger has been notified.");
+
+      const completeRideData = {
+        ...rideData, // Current ride request data
+        _id: rideId,
+        status: "accepted",
+        acceptedAt: new Date().toISOString(),
+        captain: {
+          _id: captain._id,
+          name: captain.fullName
+            ? `${captain.fullName.firstName} ${
+                captain.fullName.lastName || ""
+              }`.trim()
+            : captain.email,
+          photo:
+            captain.photo || "https://randomuser.me/api/portraits/men/34.jpg",
+          rating: captain.rating || 4.8,
+          vehicle: captain.vehicle,
+        },
+      };
+
+      localStorage.setItem("activeRide", JSON.stringify(completeRideData));
+      console.log("✅ Stored ride data:", completeRideData);
 
       if (sendMessage && rideData) {
         sendMessage("ride-accepted-by-captain", {
@@ -209,7 +230,10 @@ const CaptainHome = () => {
               model: captain.vehicle?.model || "Swift",
               color: captain.vehicle?.color || "White",
               numberPlate: captain.vehicle?.numberPlate || "MH 12 AB 1234",
-              type: captain.vehicle?.typeofVehicle || rideData?.vehicleType || "Car",
+              type:
+                captain.vehicle?.typeofVehicle ||
+                rideData?.vehicleType ||
+                "Car",
             },
           },
           estimatedArrival: "3 min", // ✅ This will be used in WaitingForDriver
