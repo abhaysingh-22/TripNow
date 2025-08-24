@@ -309,6 +309,7 @@ const completeRide = async (req, res) => {
 };
 
 // Helper function for notifying nearby captains
+
 async function notifyNearbyCapitains(
   pickup,
   dropoff,
@@ -318,22 +319,56 @@ async function notifyNearbyCapitains(
   paymentMethod = null
 ) {
   try {
+    console.log("🔍 Starting captain notification process...");
+
     const trip = await rideService.getFareWithDetails(
       pickup,
       dropoff,
       vehicleType
     );
-    const pickupCoordinates = await mapsService.getCoordinates(pickup);
+
+    console.log("✅ Trip calculation successful:", trip);
+
+    // ✅ Try to get pickup coordinates with fallback
+    let pickupCoordinates;
+    try {
+      pickupCoordinates = await mapsService.getCoordinates(pickup);
+      console.log("✅ Got pickup coordinates:", pickupCoordinates);
+    } catch (geocodingError) {
+      console.error("❌ Geocoding failed for pickup:", pickup);
+      console.error("Error:", geocodingError.message);
+
+      // ✅ Use fallback coordinates (Delhi center as example)
+      pickupCoordinates = {
+        latitude: 28.7041,
+        longitude: 77.1025,
+      };
+      console.log("⚠️ Using fallback coordinates:", pickupCoordinates);
+    }
+
     const captainInRadius = await mapsService.getCaptainsInRadius(
       pickupCoordinates.latitude,
       pickupCoordinates.longitude,
-      5
+      10 // ✅ Increase radius to 10km for better coverage
     );
+
+    console.log(`📍 Found ${captainInRadius.length} captains in radius`);
+
+    if (captainInRadius.length === 0) {
+      console.warn(
+        "⚠️ No captains found in radius. Ride request may not be delivered."
+      );
+      return;
+    }
 
     const userName = getUserName(populatedRide.userId);
 
     captainInRadius.forEach((captain) => {
       if (captain.socketId) {
+        console.log(
+          `📤 Sending ride request to captain: ${captain._id} (socket: ${captain.socketId})`
+        );
+
         const rideRequestData = {
           type: "newRide",
           ride: {
@@ -371,10 +406,17 @@ async function notifyNearbyCapitains(
           "ride-request",
           rideRequestData
         );
+
+        console.log("✅ Ride request sent successfully");
+      } else {
+        console.log(
+          `⚠️ Captain ${captain._id} has no active socket connection`
+        );
       }
     });
   } catch (error) {
-    console.error("Background processing error:", error);
+    console.error("❌ Background processing error:", error);
+    console.error("Stack trace:", error.stack);
   }
 }
 
