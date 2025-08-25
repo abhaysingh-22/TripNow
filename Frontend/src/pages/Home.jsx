@@ -235,20 +235,6 @@ function Home() {
     setShowConfirmRide,
   } = useRideManagement();
 
-  // Add this right after the useRideManagement destructuring (around line 130):
-
-  // ✅ DEBUG: Add this temporary debug panel
-  console.log("🔍 DEBUG Panel States:", {
-    showConfirmRide,
-    showLookingForDriver,
-    showWaitingForDriver,
-    showRiding,
-    selectedVehicle: selectedVehicle?.name,
-    selectedPaymentMethod,
-  });
-
-  // Input change handler
-
   // Update the handleCreateRide function:
   const handleCreateRide = useCallback(
     async (rideData) => {
@@ -330,10 +316,10 @@ function Home() {
       }));
 
       // Handle OTP
-      if (data.otp) {
-        setUserOTP(data.otp);
-        setShowOTP(true);
-        console.log("✅ OTP updated from socket:", data.otp);
+      if (data.ride?.otp) {
+        // setUserOTP(data.otp);
+        // setShowOTP(true);
+        console.log("✅ OTP updated from socket:", data.ride.otp);
       }
 
       // ✅ TRIGGER PANEL TRANSITIONS
@@ -522,7 +508,7 @@ function Home() {
       />
 
       {/* ✅ Move OTP Display here with AnimatePresence */}
-      <AnimatePresence>
+      {/* <AnimatePresence>
         {showOTP && userOTP && (
           <OTPDisplay
             otp={userOTP}
@@ -533,7 +519,7 @@ function Home() {
             }}
           />
         )}
-      </AnimatePresence>
+      </AnimatePresence> */}
 
       {/* Map Section */}
       <motion.div
@@ -610,6 +596,7 @@ function Home() {
               onBack={() => setShowWaitingForDriver(false)}
               onCancel={handleCancelWaiting}
               captainInfo={currentRide?.captain}
+              otp={currentRide?.otp}
             />
           </motion.div>
         )}
