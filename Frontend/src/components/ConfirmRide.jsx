@@ -70,12 +70,15 @@ function ConfirmRide({
       return;
     }
     // call onConfirm with selected payment (Home will handle API)
-    onConfirm({
-      pickup: pickupAddress,
-      dropoff: destinationAddress,
+    const rideData = {
+      pickup: pickup,
+      dropoff: destination,
       vehicleType: selectedVehicle?.name?.toLowerCase() || "car",
       paymentMethod: selectedPayment,
-    });
+    };
+
+    console.log("🚗 ConfirmRide: Sending ride data:", rideData);
+    onConfirm(rideData);
   };
 
   return (
