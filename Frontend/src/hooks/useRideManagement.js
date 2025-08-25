@@ -103,7 +103,9 @@ export const useRideManagement = () => {
   // Confirm ride booking
   const confirmRide = useCallback((paymentMethod) => {
     setSelectedPaymentMethod(paymentMethod);
-    setShowLookingForDriver(true);
+    setShowConfirmRide(false);
+
+    console.log("Looking for driver...");
   }, []);
 
   // Handle vehicle selection
@@ -220,9 +222,7 @@ export const useRideManagement = () => {
     handleCancelRiding,
     setShowLookingForDriver,
     setShowWaitingForDriver,
-
-    setShowLookingForDriver,
-    setShowWaitingForDriver,
+    setShowConfirmRide,
 
     // Setters (for external control)
     setShowRideOptions,
@@ -230,8 +230,6 @@ export const useRideManagement = () => {
     setIsSearching,
     setShowConfirmRide,
     setSelectedVehicle,
-    setShowLookingForDriver,
-    setShowWaitingForDriver,
     setSelectedPaymentMethod,
     setShowRiding,
     setHasActiveRide,
