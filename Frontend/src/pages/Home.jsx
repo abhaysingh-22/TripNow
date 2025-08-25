@@ -101,7 +101,9 @@ const OTPDisplay = ({ otp, onClose }) => {
           <h3 className="text-xl font-bold text-gray-800 mb-2">
             Your Ride OTP
           </h3>
-          <p className="text-sm text-gray-600">Share this code with your driver</p>
+          <p className="text-sm text-gray-600">
+            Share this code with your driver
+          </p>
         </div>
 
         {/* OTP Display */}
@@ -188,8 +190,8 @@ function Home() {
 
   // Around line 90-100, ADD these state variables:
 
-  const [showLookingForDriver, setShowLookingForDriver] = useState(false);
-  const [showWaitingForDriver, setShowWaitingForDriver] = useState(false);
+  // const [showLookingForDriver, setShowLookingForDriver] = useState(false);
+  // const [showWaitingForDriver, setShowWaitingForDriver] = useState(false);
 
   // Custom hooks
   const {
@@ -207,8 +209,8 @@ function Home() {
     isSearching,
     showConfirmRide,
     selectedVehicle,
-    // showLookingForDriver,
-    // showWaitingForDriver,
+    showLookingForDriver,
+    showWaitingForDriver,
     selectedPaymentMethod,
     showRiding,
     hasActiveRide,
@@ -228,9 +230,22 @@ function Home() {
     handleGoHome,
     handleGoBackToRide,
     handleCancelRiding,
-    // setShowLookingForDriver,
-    // setShowWaitingForDriver,
+    setShowLookingForDriver,
+    setShowWaitingForDriver,
+    setShowConfirmRide,
   } = useRideManagement();
+
+  // Add this right after the useRideManagement destructuring (around line 130):
+
+  // ✅ DEBUG: Add this temporary debug panel
+  console.log("🔍 DEBUG Panel States:", {
+    showConfirmRide,
+    showLookingForDriver,
+    showWaitingForDriver,
+    showRiding,
+    selectedVehicle: selectedVehicle?.name,
+    selectedPaymentMethod,
+  });
 
   // Input change handler
 
@@ -283,7 +298,9 @@ function Home() {
           console.log("✅ OTP set:", data.ride.otp);
         }
 
-        handleConfirmPickup();
+        setShowConfirmRide(false);
+        setShowLookingForDriver(true);
+        setShowWaitingForDriver(false);
         toast.success("Ride request sent to nearby drivers!", {
           duration: 3000,
         });
@@ -294,13 +311,13 @@ function Home() {
         setIsSubmittingRide(false);
       }
     },
-    [user, handleConfirmPickup] // ✅ Add handleConfirmPickup to dependencies
+    [user, setShowConfirmRide, setShowLookingForDriver, setShowWaitingForDriver] // ✅ Add handleConfirmPickup to dependencies
   );
 
   // Around line 247-290, REPLACE both socket listeners with this single one:
 
   useEffect(() => {
-    const cleanup = onMessage("ride-accepted-by-captain", (data) => {
+    const cleanup = onMessage("ride-accepted", (data) => {
       console.log("🎉 Captain accepted ride:", data);
       console.log("🔑 OTP from socket:", data.otp);
 
@@ -320,15 +337,15 @@ function Home() {
       }
 
       // ✅ TRIGGER PANEL TRANSITIONS
+      console.log("✅ Showing LookingForDriver panel");
       setShowLookingForDriver(true);
       setShowWaitingForDriver(false);
-      console.log("✅ Showing LookingForDriver panel");
 
       // ✅ After 3 seconds, switch to WaitingForDriver
       setTimeout(() => {
+        console.log("✅ Switched to WaitingForDriver panel");
         setShowLookingForDriver(false);
         setShowWaitingForDriver(true);
-        console.log("✅ Switched to WaitingForDriver panel");
       }, 7000);
 
       // Show success message
