@@ -30,9 +30,9 @@ function CaptainRiding() {
       rating: 4.5,
       photo: "https://randomuser.me/api/portraits/lego/1.jpg",
     },
-    amount: 0,
-    distance: 0,
-    duration: 0,
+    amount: 250,
+    distance: 12.5,
+    duration: 25,
     pickup: {
       address: "Loading pickup location...",
       time: "3 min away",
@@ -91,18 +91,70 @@ function CaptainRiding() {
   };
 
   // ...existing code...
-  const handleRideFinished = () => {
-    // ✅ Use correct ID field and real ride amount
-    const rideId = rideData._id || rideData.id; // Handle both formats
-    const earnings = rideData.amount || 0;
+  const handleRideFinished = async () => {
+    // ✅ Get real ride data from localStorage
+    const activeRide = JSON.parse(localStorage.getItem("activeRide") || "{}");
+    const rideId = activeRide._id || rideData._id || rideData.id;
+    const earnings =
+      activeRide.amount || activeRide.fare || rideData.amount || 0;
+    const distance = activeRide.distance || rideData.distance || 0;
+    const duration = activeRide.duration || rideData.duration || 0;
 
-    // ✅ Dispatch custom event with REAL data
-    window.dispatchEvent(
-      new CustomEvent("rideCompleted", {
-        detail: { rideId, earnings },
-      })
-    );
+    console.log("🎯 Finishing ride with REAL data:", {
+      rideId,
+      earnings,
+      distance,
+      duration,
+      activeRide,
+    });
 
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}/api/rides/complete`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            rideId: rideId, // ✅ Use real ride ID
+            fare: Number(earnings),
+            distance: Number(distance),
+            duration: Number(duration),
+          }),
+        }
+      );
+
+      const responseData = await response.json();
+      console.log("📥 Complete ride response:", responseData);
+
+      if (response.ok) {
+        console.log("✅ Ride completed successfully on backend");
+
+        // ✅ Clear the active ride from localStorage
+        localStorage.removeItem("activeRide");
+
+        // ✅ Dispatch custom event with REAL earnings
+        window.dispatchEvent(
+          new CustomEvent("rideCompleted", {
+            detail: { rideId, earnings: Number(earnings) },
+          })
+        );
+      } else {
+        console.error("❌ Failed to complete ride on backend:", responseData);
+        toast.error(
+          "Failed to complete ride: " +
+            (responseData.message || "Unknown error")
+        );
+      }
+    } catch (error) {
+      console.error("❌ Error completing ride:", error);
+      toast.error("Error completing ride: " + error.message);
+    }
+
+    // ✅ Send socket message for user redirect
     if (sendMessage && rideId) {
       console.log("🚀 Broadcasting ride completion to all users");
       sendMessage("message", {
@@ -120,23 +172,77 @@ function CaptainRiding() {
       navigate("/captain-home");
     }, 3000);
   };
-  // ✅ ALSO ADD: Load real ride data when component mounts
+  // ...existing code...
+  // ✅ REPLACE the entire useEffect that loads ride data (around line 160-190)
   useEffect(() => {
-    // Get real ride data from location state or API
-    const loadRealRideData = async () => {
-      try {
-        // You should get this from navigation state or API
-        const realRideData = location.state?.rideData; // or fetch from API
-        if (realRideData) {
-          setRideData(realRideData);
-        }
-      } catch (error) {
-        console.error("Error loading ride data:", error);
-      }
-    };
+    // Get ride data from location state (passed from ConfirmRidePopup after OTP verification)
+    const { state } = location;
+    console.log("📍 Location state in CaptainRiding:", state);
 
-    loadRealRideData();
-  }, []);
+    if (state?.rideData) {
+      const { rideData } = state;
+      console.log("✅ Using real ride data from navigation state:", rideData);
+
+      setRideData({
+        _id: rideData._id || rideData.id, // ✅ Use real MongoDB _id
+        user: {
+          name: rideData.user?.name || "Unknown User",
+          rating: rideData.user?.rating || 4.5,
+          photo:
+            rideData.user?.photo ||
+            "https://randomuser.me/api/portraits/lego/1.jpg",
+        },
+        amount: Number(rideData.amount || rideData.fare || 0),
+        distance: Number(rideData.distance || 0),
+        duration: Number(rideData.duration || 0),
+        pickup: {
+          address:
+            rideData.pickupLocation ||
+            rideData.pickup?.address ||
+            "Pickup Location",
+          time: "Picked up",
+        },
+        destination: {
+          address:
+            rideData.dropoffLocation ||
+            rideData.destination?.address ||
+            "Destination",
+          time: "Arriving soon",
+        },
+      });
+    } else {
+      // ✅ Fallback: Try to get from localStorage (if captain refreshes page)
+      const activeRide = JSON.parse(localStorage.getItem("activeRide") || "{}");
+      console.log("📍 Fallback: Active ride from localStorage:", activeRide);
+
+      if (activeRide && activeRide._id) {
+        setRideData({
+          _id: activeRide._id, // ✅ Use real MongoDB _id
+          user: {
+            name: activeRide.user?.name || "Unknown User",
+            rating: activeRide.user?.rating || 4.5,
+            photo:
+              activeRide.user?.photo ||
+              "https://randomuser.me/api/portraits/lego/1.jpg",
+          },
+          amount: Number(activeRide.amount || activeRide.fare || 0),
+          distance: Number(activeRide.distance || 0),
+          duration: Number(activeRide.duration || 0),
+          pickup: {
+            address: activeRide.pickupLocation || "Pickup Location",
+            time: "Picked up",
+          },
+          destination: {
+            address: activeRide.dropoffLocation || "Destination",
+            time: "Arriving soon",
+          },
+        });
+      } else {
+        console.warn("⚠️ No real ride data found. Using mock data for demo.");
+        // Keep existing mock data as fallback
+      }
+    }
+  }, [location]);
   // ...existing code...
 
   // ✅ Add useEffect to get real ride data
