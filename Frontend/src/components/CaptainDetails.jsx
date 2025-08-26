@@ -51,19 +51,18 @@ function CaptainDetails({
 
   // Stats configuration for cleaner, maintainable code
   const [captainStats, setCaptainStats] = useState({
-    earningsToday: 0,
-    hoursOnline: 0,
-    distanceTravelled: 0,
+    totalEarnings: 0,
+    totalDistance: 0,
     totalRides: 0,
   });
 
-  // ✅ Fetch real captain statistics (keep existing useEffect)
+  // ✅ Fetch real captain statistics (simplified)
   useEffect(() => {
     const fetchCaptainStats = async () => {
       try {
         const token = localStorage.getItem("token");
         const response = await fetch(
-          `${import.meta.env.VITE_BASE_URL}/api/captains/stats`,
+          `${import.meta.env.VITE_BASE_URL}/api/captains/stats?t=${Date.now()}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -74,12 +73,13 @@ function CaptainDetails({
         if (response.ok) {
           const data = await response.json();
           setCaptainStats({
-            earningsToday: data.stats.today.earnings,
-            hoursOnline: data.stats.today.hoursOnline,
-            distanceTravelled: data.stats.today.distance,
-            totalRides: data.stats.career.totalRides,
+            totalEarnings: data.stats.career.totalEarnings || 0,
+            totalDistance: data.stats.career.totalDistance || 0,
+            totalRides: data.stats.career.totalRides || 0,
           });
         }
+
+        console.log("✅ Career stats updated successfully");
       } catch (error) {
         console.error("Error fetching captain stats:", error);
       }
@@ -89,9 +89,13 @@ function CaptainDetails({
       fetchCaptainStats();
     }
 
-    const handleRideCompleted = () => {
+    const handleRideCompleted = (event) => {
       console.log("🔄 Ride completed event detected, refreshing stats...");
-      fetchCaptainStats();
+      console.log("Event details:", event.detail);
+      console.log("Earnings from event:", event.detail.earnings);
+      setTimeout(() => {
+        fetchCaptainStats();
+      }, 2000);
     };
 
     // Listen for custom event when ride is completed
@@ -102,55 +106,24 @@ function CaptainDetails({
     };
   }, [captain]);
 
-  // ✅ Use useMemo instead of useState for captainData
-  const captainData = React.useMemo(() => {
-    if (captain) {
-      return {
-        name: captain.fullName
-          ? `${captain.fullName.firstName} ${
-              captain.fullName.lastName || ""
-            }`.trim()
-          : captain.email || "Captain",
-        photo:
-          captain.photo || "https://randomuser.me/api/portraits/men/34.jpg",
-        rating: captain.rating || 4.8,
-        email: captain.email,
-        vehicleInfo: captain.vehicle
-          ? {
-              type: captain.vehicle.typeofVehicle || "car",
-              numberPlate: captain.vehicle.numberPlate || "N/A",
-              color: captain.vehicle.color || "N/A",
-              capacity: captain.vehicle.capacity || "N/A",
-            }
-          : null,
-      };
-    }
-
-    return {
-      name: "John Doe",
-      photo: "https://randomuser.me/api/portraits/men/34.jpg",
-      rating: 4.8,
-    };
-  }, [captain]);
-
-  // ✅ Add statsConfig array that depends on captainStats
+  // ✅ Simplified statsConfig with only career stats
   const statsConfig = React.useMemo(
     () => [
       {
-        title: "Hours Online",
-        value: `${captainStats.hoursOnline}h`,
-        icon: "clock",
-        bgColor: "bg-blue-100",
-        iconColor: "text-blue-600",
-        valueColor: "text-blue-700",
-      },
-      {
-        title: "Distance",
-        value: `${captainStats.distanceTravelled.toFixed(1)} km`,
-        icon: "map",
+        title: "Total Earnings",
+        value: `₹${captainStats.totalEarnings.toFixed(2)}`,
+        icon: "dollar",
         bgColor: "bg-green-100",
         iconColor: "text-green-600",
         valueColor: "text-green-700",
+      },
+      {
+        title: "Total Distance",
+        value: `${captainStats.totalDistance.toFixed(1)} km`,
+        icon: "map",
+        bgColor: "bg-blue-100",
+        iconColor: "text-blue-600",
+        valueColor: "text-blue-700",
       },
       {
         title: "Total Rides",
@@ -172,15 +145,15 @@ function CaptainDetails({
     [captainStats, isOnline]
   );
 
-  // Reusable icon component to reduce code duplication
+  // ✅ Add dollar icon to the existing icon types
   const IconComponent = ({ type, className }) => {
     const icons = {
-      clock: (
+      dollar: (
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth={2}
-          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
         />
       ),
       map: (
@@ -236,7 +209,7 @@ function CaptainDetails({
       animate="show"
       className="p-3 sm:p-4 lg:p-6 pb-4 sm:pb-6 bg-white"
     >
-      {/* ✅ Show real captain name */}
+      {/* Captain Profile Section */}
       <motion.div
         variants={animations.item}
         className="flex items-center justify-between mb-4 sm:mb-5"
@@ -244,8 +217,11 @@ function CaptainDetails({
         <div className="flex items-center">
           <div className="relative">
             <img
-              src={captainData.photo}
-              alt={`${captainData.name} profile`}
+              src={
+                captain?.photo ||
+                "https://randomuser.me/api/portraits/men/32.jpg"
+              }
+              alt={`${captain?.name || "Captain"} profile`}
               className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border-2 ${
                 isOnline ? "border-yellow-400" : "border-red-400"
               }`}
@@ -268,11 +244,16 @@ function CaptainDetails({
 
           <div className="ml-3">
             <h2 className="font-bold text-gray-800 text-sm sm:text-base">
-              {captainData.name} {/* ✅ Real captain name */}
+              {/* ✅ FIX: Access fullName structure properly */}
+              {captain?.fullName
+                ? `${captain.fullName.firstName} ${
+                    captain.fullName.lastName || ""
+                  }`.trim()
+                : "Captain Jhonny"}
             </h2>
             {/* ✅ Show email if available */}
-            {captainData.email && (
-              <p className="text-xs text-gray-500">{captainData.email}</p>
+            {captain?.email && (
+              <p className="text-xs text-gray-500">{captain.email}</p>
             )}
             <div className="flex items-center">
               {/* Star rating display */}
@@ -280,7 +261,7 @@ function CaptainDetails({
                 <svg
                   key={i}
                   className={`w-3 h-3 ${
-                    i < Math.floor(captainData.rating)
+                    i < Math.floor(captain?.rating || 4.7)
                       ? "text-yellow-400"
                       : "text-gray-200"
                   }`}
@@ -290,8 +271,11 @@ function CaptainDetails({
                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                 </svg>
               ))}
-              <span className="ml-1 text-xs text-yellow-500">
-                {captainData.rating}
+              <span className="ml-1 text-xs text-yellow-500 font-medium">
+                {captain?.rating || "4.7"}
+              </span>
+              <span className="ml-1 text-xs text-gray-400">
+                ({captain?.totalRides || captainStats.totalRides || 0} rides)
               </span>
             </div>
           </div>
@@ -311,41 +295,6 @@ function CaptainDetails({
             repeat: Infinity,
           }}
         />
-      </motion.div>
-
-      {/* Today's Earnings Card - Dynamic color based on status */}
-      <motion.div
-        variants={animations.item}
-        className={`rounded-xl p-3 sm:p-4 mb-3 sm:mb-4 text-white shadow-md ${
-          isOnline ? "bg-green-500" : "bg-red-500"
-        }`}
-      >
-        <div className="flex justify-between items-center">
-          <div>
-            <p className="text-white text-opacity-90 text-xs font-medium">
-              Today's Earnings
-            </p>
-            <p className="text-xl sm:text-2xl font-bold">
-              ₹{captainStats.earningsToday.toFixed(2)}
-            </p>
-          </div>
-          {/* Earnings icon */}
-          <div className="p-2 bg-white bg-opacity-20 rounded-full">
-            <svg
-              className="w-4 h-4 sm:w-5 sm:h-5 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          </div>
-        </div>
       </motion.div>
 
       {/* Statistics Grid - Responsive 2x2 layout */}
@@ -370,6 +319,7 @@ function CaptainDetails({
                 className={`w-3 h-3 sm:w-4 sm:h-4 ${stat.iconColor}`}
               />
             </div>
+
             {/* Stat title and value */}
             <p className="text-xs text-gray-500 font-medium">{stat.title}</p>
             <p
