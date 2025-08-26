@@ -154,7 +154,21 @@ const ConfirmRidePopup = ({ ride, onConfirm, onCancel }) => {
 
       console.log("Ride started successfully:", data);
       toast.success("Ride started successfully!");
-      navigate("/captain-riding");
+      navigate("/captain-riding", {
+        state: {
+          rideData: {
+            _id: rideData._id || rideData.id,
+            user: rideData.user,
+            amount: rideData.amount,
+            fare: rideData.fare,
+            distance: rideData.distance,
+            duration: rideData.duration,
+            pickupLocation: rideData.pickup?.address || rideData.pickupLocation,
+            dropoffLocation:
+              rideData.destination?.address || rideData.dropoffLocation,
+          },
+        },
+      });
     } catch (error) {
       console.error("❌ OTP verification failed:", error);
       console.error("❌ Error stack:", error.stack);
