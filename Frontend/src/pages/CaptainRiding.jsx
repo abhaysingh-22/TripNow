@@ -12,7 +12,7 @@ import { useSocket } from "../context/SocketContext.jsx";
 function CaptainRiding() {
   // Add these imports and context
   const { captain } = useContext(CaptainContext);
-  const { onMessage } = useSocket();
+  const { onMessage, sendMessage } = useSocket();
 
   // Map interaction state
   const [mapZoom, setMapZoom] = useState(1);
@@ -90,53 +90,98 @@ function CaptainRiding() {
     setShowFinishPanel(false);
   };
 
-  // Complete the ride and navigate back to captain home
+  // ...existing code...
   const handleRideFinished = () => {
+    // ✅ Use correct ID field and real ride amount
+    const rideId = rideData._id || rideData.id; // Handle both formats
+    const earnings = rideData.amount || 0;
+
+    // ✅ Dispatch custom event with REAL data
+    window.dispatchEvent(
+      new CustomEvent("rideCompleted", {
+        detail: { rideId, earnings },
+      })
+    );
+
+    if (sendMessage && rideId) {
+      console.log("🚀 Broadcasting ride completion to all users");
+      sendMessage("message", {
+        type: "ride-completed",
+        rideId,
+        message: "Ride has been completed",
+        timestamp: Date.now(),
+      });
+    }
+
     setIsRideComplete(true);
     setShowFinishPanel(false);
 
-    // Show completion message briefly, then navigate to captain home
     setTimeout(() => {
       navigate("/captain-home");
     }, 3000);
   };
+  // ✅ ALSO ADD: Load real ride data when component mounts
+  useEffect(() => {
+    // Get real ride data from location state or API
+    const loadRealRideData = async () => {
+      try {
+        // You should get this from navigation state or API
+        const realRideData = location.state?.rideData; // or fetch from API
+        if (realRideData) {
+          setRideData(realRideData);
+        }
+      } catch (error) {
+        console.error("Error loading ride data:", error);
+      }
+    };
+
+    loadRealRideData();
+  }, []);
+  // ...existing code...
 
   // ✅ Add useEffect to get real ride data
   useEffect(() => {
     // Get ride data from localStorage or API
-    const activeRide = JSON.parse(localStorage.getItem('activeRide') || '{}');
+    const activeRide = JSON.parse(localStorage.getItem("activeRide") || "{}");
     console.log("📍 Active ride from localStorage:", activeRide);
-    
+
     if (activeRide && Object.keys(activeRide).length > 0) {
       // ✅ Extract user data from the ride structure
       const userData = activeRide.user || {};
-      
+
       setRideData({
         id: activeRide._id || activeRide.id || "ride-123",
         user: {
           name: userData.name || "Unknown User",
           rating: userData.rating || 4.5,
-          photo: userData.photo || "https://randomuser.me/api/portraits/lego/1.jpg",
+          photo:
+            userData.photo || "https://randomuser.me/api/portraits/lego/1.jpg",
         },
         amount: Number(activeRide.amount || activeRide.fare || 0),
         distance: Number(activeRide.distance || 0),
         duration: Number(activeRide.duration || 0),
         pickup: {
-          address: activeRide.pickupLocation || activeRide.pickup?.address || "Pickup Location",
+          address:
+            activeRide.pickupLocation ||
+            activeRide.pickup?.address ||
+            "Pickup Location",
           time: activeRide.pickup?.time || "Picked up",
         },
         destination: {
-          address: activeRide.dropoffLocation || activeRide.destination?.address || "Destination",
+          address:
+            activeRide.dropoffLocation ||
+            activeRide.destination?.address ||
+            "Destination",
           time: activeRide.destination?.time || "Arriving soon",
         },
       });
-      
+
       console.log("✅ Processed ride data for CaptainRiding:", {
         id: activeRide._id,
         user: userData,
         amount: activeRide.amount || activeRide.fare,
         pickup: activeRide.pickupLocation,
-        destination: activeRide.dropoffLocation
+        destination: activeRide.dropoffLocation,
       });
     }
   }, []);
@@ -147,7 +192,7 @@ function CaptainRiding() {
 
     const cleanup = onMessage("ride-update", (data) => {
       console.log("Ride update received:", data);
-      setRideData(prevData => ({
+      setRideData((prevData) => ({
         ...prevData,
         ...data,
         user: data.user || prevData.user,
@@ -313,23 +358,47 @@ function CaptainRiding() {
               {/* ✅ Inline FinishRide content instead of separate component */}
               <div className="text-center mb-4">
                 <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                  <svg
+                    className="w-8 h-8 text-green-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                 </div>
-                <h2 className="text-lg font-bold text-gray-800">Ride Completed</h2>
-                <p className="text-sm text-gray-500">Finalize the ride details</p>
+                <h2 className="text-lg font-bold text-gray-800">
+                  Ride Completed
+                </h2>
+                <p className="text-sm text-gray-500">
+                  Finalize the ride details
+                </p>
               </div>
 
               {/* User Information */}
               <div className="flex items-center mb-4 p-3 bg-gray-50 rounded-lg">
                 <div className="h-10 w-10 rounded-full overflow-hidden">
-                  <img src={rideData.user.photo} alt={rideData.user.name} className="h-full w-full object-cover" />
+                  <img
+                    src={rideData.user.photo}
+                    alt={rideData.user.name}
+                    className="h-full w-full object-cover"
+                  />
                 </div>
                 <div className="ml-3 flex-1">
-                  <h3 className="font-medium text-gray-800">{rideData.user.name}</h3>
+                  <h3 className="font-medium text-gray-800">
+                    {rideData.user.name}
+                  </h3>
                   <div className="flex items-center">
-                    <svg className="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                    <svg
+                      className="w-3 h-3 text-yellow-400"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                     </svg>
                     <span className="text-xs ml-1">{rideData.user.rating}</span>
@@ -337,7 +406,9 @@ function CaptainRiding() {
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-gray-500">Earning</p>
-                  <p className="font-bold text-green-600">₹{rideData.amount.toFixed(2)}</p>
+                  <p className="font-bold text-green-600">
+                    ₹{rideData.amount.toFixed(2)}
+                  </p>
                 </div>
               </div>
 
@@ -346,27 +417,51 @@ function CaptainRiding() {
                 {/* Pickup */}
                 <div className="flex items-center">
                   <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center mr-3">
-                    <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg
+                      className="w-3 h-3 text-blue-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
                       <circle cx="12" cy="12" r="3" strokeWidth="2" />
                     </svg>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Pickup</p>
-                    <p className="font-medium text-gray-800 text-sm">{rideData.pickup.address}</p>
+                    <p className="font-medium text-gray-800 text-sm">
+                      {rideData.pickup.address}
+                    </p>
                   </div>
                 </div>
 
                 {/* Destination */}
                 <div className="flex items-center">
                   <div className="w-6 h-6 rounded-full bg-yellow-100 flex items-center justify-center mr-3">
-                    <svg className="w-3 h-3 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <svg
+                      className="w-3 h-3 text-yellow-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
                     </svg>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Destination</p>
-                    <p className="font-medium text-gray-800 text-sm">{rideData.destination.address}</p>
+                    <p className="font-medium text-gray-800 text-sm">
+                      {rideData.destination.address}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -375,15 +470,21 @@ function CaptainRiding() {
               <div className="flex justify-between mb-4 py-2 px-3 bg-gray-50 rounded-lg">
                 <div className="text-center">
                   <p className="text-xs text-gray-500">Distance</p>
-                  <p className="font-bold text-gray-800 text-sm">{rideData.distance.toFixed(1)} km</p>
+                  <p className="font-bold text-gray-800 text-sm">
+                    {rideData.distance.toFixed(1)} km
+                  </p>
                 </div>
                 <div className="text-center">
                   <p className="text-xs text-gray-500">Duration</p>
-                  <p className="font-bold text-gray-800 text-sm">{Math.round(rideData.duration)} min</p>
+                  <p className="font-bold text-gray-800 text-sm">
+                    {Math.round(rideData.duration)} min
+                  </p>
                 </div>
                 <div className="text-center">
                   <p className="text-xs text-gray-500">Total</p>
-                  <p className="font-bold text-green-600 text-sm">₹{rideData.amount.toFixed(2)}</p>
+                  <p className="font-bold text-green-600 text-sm">
+                    ₹{rideData.amount.toFixed(2)}
+                  </p>
                 </div>
               </div>
 
