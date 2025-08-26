@@ -24,7 +24,7 @@ const captainSchema = new moongoose.Schema({
     required: true,
   },
 
-  totalRide: {
+  totalRides: {
     type: Number,
     default: 0,
   },
