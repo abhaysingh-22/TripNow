@@ -233,6 +233,9 @@ function Home() {
     setShowLookingForDriver,
     setShowWaitingForDriver,
     setShowConfirmRide,
+    setShowRiding,
+    setShowRideOptions,
+    setHasActiveRide,
   } = useRideManagement();
 
   // Update the handleCreateRide function:
@@ -457,6 +460,58 @@ function Home() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showSuggestions, setShowSuggestions]);
+
+  // ...existing code...
+  useEffect(() => {
+    if (!onMessage) return;
+
+    // ✅ Listen for the message event
+    const cleanup1 = onMessage("message", (data) => {
+      if (data.type === "ride-completed") {
+        console.log("🏠 Ride completed - resetting user UI");
+        // Close all panels and reset states
+        setShowRiding(false);
+        setHasActiveRide(false);
+        setShowConfirmRide(false);
+        setShowRideOptions(false);
+        setShowLookingForDriver(false);
+        setShowWaitingForDriver(false);
+        setIsSidePanelOpen(false);
+        setIsPanelMinimized(false);
+        setCurrentRide(null);
+        setPickup("");
+        setDestination("");
+        setUserOTP(null);
+        setShowOTP(false);
+        toast.success("Ride completed!");
+      }
+    });
+
+    // ✅ Keep this as backup
+    const cleanup2 = onMessage("ride-completed", () => {
+      console.log("🏠 Direct ride completed - resetting UI");
+      setShowRiding(false);
+      setHasActiveRide(false);
+      setShowConfirmRide(false);
+      setShowRideOptions(false);
+      setShowLookingForDriver(false);
+      setShowWaitingForDriver(false);
+      setIsSidePanelOpen(false);
+      setIsPanelMinimized(false);
+      setCurrentRide(null);
+      setPickup("");
+      setDestination("");
+      setUserOTP(null);
+      setShowOTP(false);
+      toast.success("Back to home");
+    });
+
+    return () => {
+      cleanup1();
+      cleanup2();
+    };
+  }, [onMessage]);
+  // ...existing code...
 
   useEffect(() => {
     if (!onMessage) return;
