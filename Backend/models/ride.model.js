@@ -35,6 +35,9 @@ const rideSchema = new Schema({
   distance: {
     type: Number,
   },
+  completedAt: {
+    type: Date,
+  },
   paymentId: {
     type: String,
   },
