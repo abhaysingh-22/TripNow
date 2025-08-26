@@ -129,9 +129,9 @@ const getCaptainStats = async (req, res) => {
   try {
     const captainId = req.captain._id;
 
-    console.log(`📊 Fetching stats for captain: ${captainId}`);
+    console.log(`📊 Fetching career stats for captain: ${captainId}`);
 
-    // Get captain data with updated stats
+    // Get captain data with career stats only
     const captain = await Captain.findById(captainId).select(
       "totalRides totalEarnings totalDistance"
     );
@@ -140,47 +140,8 @@ const getCaptainStats = async (req, res) => {
       return res.status(404).json({ error: "Captain not found" });
     }
 
-    // Get today's date range
-    const today = new Date();
-    const startOfToday = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate()
-    );
-    const endOfToday = new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000);
-
-    // Get today's completed rides for this captain
-    const todayRides = await Ride.find({
-      captainId: captainId,
-      status: "completed",
-      completedAt: {
-        $gte: startOfToday,
-        $lt: endOfToday,
-      },
-    });
-
-    // Calculate today's stats
-    const todayEarnings = todayRides.reduce(
-      (total, ride) => total + (ride.fare || 0),
-      0
-    );
-    const todayDistance = todayRides.reduce(
-      (total, ride) => total + (ride.distance || 0),
-      0
-    );
-    const todayRidesCount = todayRides.length;
-
-    // Calculate hours online (simplified - you can implement actual tracking)
-    const hoursOnline =
-      todayRidesCount > 0 ? Math.max(todayRidesCount * 0.5, 2) : 0;
-
+    // ✅ Simplified response with only career stats
     const stats = {
-      today: {
-        earnings: todayEarnings,
-        hoursOnline: hoursOnline,
-        distance: todayDistance,
-        // rides: todayRidesCount,
-      },
       career: {
         totalRides: captain.totalRides || 0,
         totalEarnings: captain.totalEarnings || 0,
@@ -188,7 +149,7 @@ const getCaptainStats = async (req, res) => {
       },
     };
 
-    console.log("✅ Captain stats fetched:", stats);
+    console.log("✅ Captain career stats fetched:", stats);
 
     res.status(200).json({
       success: true,
