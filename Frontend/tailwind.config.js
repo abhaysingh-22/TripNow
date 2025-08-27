@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import HomeCar from "../assets/HomeCar.jpg";
+import TripNowBlack from "../assets/TripNowBlack.png";
 
 function Home() {
   return (
@@ -16,15 +17,15 @@ function Home() {
       <header className="p-4 md:p-6 lg:p-8">
         <img
           className="w-[60px] md:w-[80px] lg:w-[100px]"
-          src="https://cdn-assets-eu.frontify.com/s3/frontify-enterprise-files-eu/eyJwYXRoIjoid2VhcmVcL2ZpbGVcLzhGbTh4cU5SZGZUVjUxYVh3bnEyLnN2ZyJ9:weare:F1cOF9Bps96cMy7r9Y2d7affBYsDeiDoIHfqZrbcxAw?width=1200&height=417"
-          alt="Uber Logo"
+          src={TripNowBlack}
+          alt="TripNow Logo"
         />
       </header>
 
       <div className="w-full px-0 sm:px-0">
         <div className="bg-white w-full sm:rounded-t-xl shadow-xl p-5 sm:p-6 md:p-8 animate-slideInUp">
           <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-center mb-4 sm:mb-6">
-            Get Started with Uber
+            Get Started with TripNow
           </h2>
           <Link
             to="/login"
