@@ -25,7 +25,7 @@ export const useRideManagement = () => {
   const rideTypes = [
     {
       id: 1,
-      name: "UberGo",
+      name: "TripNow",
       image: "https://www.pngplay.com/wp-content/uploads/8/Uber-PNG-Photos.png",
       price: "₹299",
       time: "2 min away",
