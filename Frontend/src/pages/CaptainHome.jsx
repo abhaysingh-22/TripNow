@@ -9,6 +9,7 @@ import ConfirmRidePopup from "../components/ConfirmRidePopup";
 import { useSocket } from "../context/SocketContext.jsx";
 import { CaptainContext } from "../context/CaptainContext.jsx";
 import LoadingScreen from "../components/LoadingScreen.jsx";
+import TripNowBlack from "../assets/TripNowBlack.png";
 
 const CaptainHome = () => {
   // UI State Management
@@ -317,8 +318,8 @@ const CaptainHome = () => {
       <header className="absolute top-0 left-0 right-0 z-20 flex justify-between items-center p-3 sm:p-4">
         <div className="flex items-center">
           <img
-            src="https://w7.pngwing.com/pngs/801/240/png-transparent-uber-hd-logo.png"
-            alt="Uber Logo"
+            src={TripNowBlack}
+            alt="TripNow Logo"
             className="w-12 h-5 sm:w-15 sm:h-7"
           />
         </div>
