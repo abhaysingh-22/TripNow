@@ -5,6 +5,7 @@ import {
   GlobeAltIcon,
   ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
+import TripNowBlack from "../assets/TripNowBlack.png";
 
 function LoadingScreen() {
   return (
@@ -91,8 +92,8 @@ function LoadingScreen() {
 
             <div className="relative bg-white p-4 sm:p-5 md:p-6 rounded-full shadow-[0_0_50px_rgba(255,255,255,0.15)] mx-auto w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 flex items-center justify-center">
               <img
-                src="https://w7.pngwing.com/pngs/801/240/png-transparent-uber-hd-logo.png"
-                alt="Uber"
+                src={TripNowBlack}
+                alt="TripNow Logo"
                 className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 object-contain"
               />
 
@@ -139,7 +140,7 @@ function LoadingScreen() {
                 backgroundSize: "200% 100%",
               }}
             >
-              Welcome to Uber
+              Welcome to TripNow
             </motion.h2>
             <motion.p
               className="text-gray-400 text-sm sm:text-base md:text-lg font-medium"
