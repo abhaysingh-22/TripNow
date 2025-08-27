@@ -7,7 +7,8 @@ import { useNavigate } from "react-router-dom";
 import mapVideo from "../assets/maps.mp4";
 import { CaptainContext } from "../context/CaptainContext.jsx";
 import { useSocket } from "../context/SocketContext.jsx";
-// import FinishRide from "../components/FinishRide.jsx"; // ✅ Import FinishRide component
+import TripNow from "../assets/TripNow.png";
+import TripNowBlack from "../assets/TripNowBlack.png";
 
 function CaptainRiding() {
   // Add these imports and context
@@ -358,12 +359,12 @@ function CaptainRiding() {
         </video>
       </div>
 
-      {/* Header - Uber branding and ride status indicator */}
+      {/* Header - TripNow branding and ride status indicator */}
       <header className="absolute top-0 left-0 right-0 z-20 flex justify-between items-center p-3 sm:p-4 bg-white bg-opacity-90 shadow-md">
         <div className="flex items-center">
           <img
-            src="https://w7.pngwing.com/pngs/801/240/png-transparent-uber-hd-logo.png"
-            alt="Uber Logo"
+            src={isDarkMode ? TripNow : TripNowBlack}
+            alt="TripNow Logo"
             className="w-12 h-6 sm:w-15 sm:h-7"
           />
         </div>
