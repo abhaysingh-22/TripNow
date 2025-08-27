@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { motion } from 'framer-motion'
+import React, { useState } from "react";
+import { motion } from "framer-motion";
 import {
   ChevronUpIcon,
   ChevronDownIcon,
@@ -9,17 +9,17 @@ import {
   CurrencyRupeeIcon,
   StarIcon,
   XMarkIcon,
-  HomeIcon
-} from '@heroicons/react/24/solid'
-import mapVideo from "../assets/maps.mp4"
+  HomeIcon,
+} from "@heroicons/react/24/solid";
+import mapVideo from "../assets/maps.mp4";
 
-function Riding({ 
-  selectedVehicle, 
-  pickup, 
-  destination, 
-  selectedPayment, 
+function Riding({
+  selectedVehicle,
+  pickup,
+  destination,
+  selectedPayment,
   onCancel,
-  onHome 
+  onHome,
 }) {
   const [isPanelExpanded, setIsPanelExpanded] = useState(false);
   const [eta, setEta] = useState(8);
@@ -29,37 +29,43 @@ function Riding({
     name: "Rajesh Kumar",
     rating: 4.8,
     totalRides: 1247,
-    photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+    photo:
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
     numberPlate: "MH 12 AB 1234",
-    carModel: selectedVehicle?.name === "UberGo" ? "Maruti Swift" : 
-              selectedVehicle?.name === "Auto" ? "Bajaj Auto" :
-              selectedVehicle?.name === "Bike" ? "Honda Activa" : "Toyota Innova",
-    carColor: "White"
+    carModel:
+      selectedVehicle?.name === "CarGo"
+        ? "Maruti Swift"
+        : selectedVehicle?.name === "Auto"
+        ? "Bajaj Auto"
+        : selectedVehicle?.name === "Bike"
+        ? "Honda Activa"
+        : "Toyota Innova",
+    carColor: "White",
   };
 
   const panelVariants = {
     collapsed: {
       height: "140px",
-      transition: { 
+      transition: {
         type: "spring",
         stiffness: 400,
         damping: 35,
         mass: 0.5,
         restDelta: 0.001,
-        restSpeed: 0.001
-      }
+        restSpeed: 0.001,
+      },
     },
     expanded: {
       height: "80vh",
-      transition: { 
+      transition: {
         type: "spring",
         stiffness: 400,
         damping: 35,
         mass: 0.5,
         restDelta: 0.001,
-        restSpeed: 0.001
-      }
-    }
+        restSpeed: 0.001,
+      },
+    },
   };
 
   const contentVariants = {
@@ -68,8 +74,8 @@ function Riding({
       y: 10,
       transition: {
         duration: 0.2,
-        ease: [0.4, 0.0, 0.2, 1]
-      }
+        ease: [0.4, 0.0, 0.2, 1],
+      },
     },
     expanded: {
       opacity: 1,
@@ -77,9 +83,9 @@ function Riding({
       transition: {
         duration: 0.3,
         ease: [0.4, 0.0, 0.2, 1],
-        delay: 0.1
-      }
-    }
+        delay: 0.1,
+      },
+    },
   };
 
   return (
@@ -129,21 +135,21 @@ function Riding({
         initial="collapsed"
         animate={isPanelExpanded ? "expanded" : "collapsed"}
         className="absolute bottom-0 left-0 right-0 z-30 bg-white rounded-t-3xl shadow-2xl md:right-0 md:w-[400px] flex flex-col"
-        style={{ 
-          willChange: 'height',
-          contain: 'layout style paint'
+        style={{
+          willChange: "height",
+          contain: "layout style paint",
         }}
       >
         {/* Panel Handle */}
-        <motion.div 
+        <motion.div
           className="flex justify-center py-3 cursor-pointer bg-white rounded-t-3xl relative z-40 flex-shrink-0"
           onClick={() => setIsPanelExpanded(!isPanelExpanded)}
           whileTap={{ scale: 0.98 }}
         >
           <div className="w-12 h-1 bg-gray-300 rounded-full mb-2"></div>
           <motion.div
-            animate={{ 
-              rotate: isPanelExpanded ? 180 : 0
+            animate={{
+              rotate: isPanelExpanded ? 180 : 0,
             }}
             transition={{ duration: 0.25, ease: "easeInOut" }}
             className="absolute top-4"
@@ -155,8 +161,8 @@ function Riding({
         {/* Collapsed View - Driver Summary */}
         <div className="px-4 md:px-6 pb-4 flex-shrink-0">
           <div className="flex items-center space-x-4">
-            <img 
-              src={driverData.photo} 
+            <img
+              src={driverData.photo}
               alt={driverData.name}
               className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
             />
@@ -165,7 +171,9 @@ function Riding({
               <div className="flex items-center">
                 <StarIcon className="w-4 h-4 text-yellow-400 mr-1" />
                 <span className="text-sm">{driverData.rating}</span>
-                <span className="text-sm text-gray-500 ml-2">{driverData.numberPlate}</span>
+                <span className="text-sm text-gray-500 ml-2">
+                  {driverData.numberPlate}
+                </span>
               </div>
             </div>
             <div className="flex space-x-2">
@@ -191,19 +199,19 @@ function Riding({
           animate={isPanelExpanded ? "expanded" : "collapsed"}
           className="flex-1 overflow-hidden"
         >
-          <div 
+          <div
             className="px-4 md:px-6 pb-20 space-y-4 overflow-y-auto h-full"
-            style={{ 
-              scrollbarWidth: 'thin',
-              scrollbarColor: 'rgb(203 213 225) transparent'
+            style={{
+              scrollbarWidth: "thin",
+              scrollbarColor: "rgb(203 213 225) transparent",
             }}
           >
             {/* Vehicle Details */}
             <div className="bg-gray-50 rounded-2xl p-4">
               <h4 className="font-bold mb-3">Vehicle Details</h4>
               <div className="flex items-center space-x-4">
-                <img 
-                  src={selectedVehicle?.image} 
+                <img
+                  src={selectedVehicle?.image}
                   alt={selectedVehicle?.name}
                   className="w-16 h-12 object-contain rounded-lg bg-white p-2"
                 />
@@ -226,14 +234,18 @@ function Riding({
               <div className="space-y-3">
                 <div>
                   <p className="text-gray-400 font-medium text-sm mb-1">FROM</p>
-                  <p className="font-medium text-gray-900">{pickup || "Pickup Location"}</p>
+                  <p className="font-medium text-gray-900">
+                    {pickup || "Pickup Location"}
+                  </p>
                 </div>
-                
+
                 <div className="border-l-2 border-gray-200 ml-2 h-4"></div>
-                
+
                 <div>
                   <p className="text-gray-400 font-medium text-sm mb-1">TO</p>
-                  <p className="font-medium text-gray-900">{destination || "Destination"}</p>
+                  <p className="font-medium text-gray-900">
+                    {destination || "Destination"}
+                  </p>
                 </div>
               </div>
             </div>
@@ -241,28 +253,40 @@ function Riding({
             {/* Payment Status */}
             <div className="bg-white border border-gray-200 rounded-2xl p-4">
               <h4 className="font-bold mb-3">Payment</h4>
-              <div className={`flex items-center justify-between p-3 rounded-xl border ${
-                selectedPayment === 'cash' 
-                  ? 'bg-yellow-50 border-yellow-200' 
-                  : 'bg-green-50 border-green-200'
-              }`}>
+              <div
+                className={`flex items-center justify-between p-3 rounded-xl border ${
+                  selectedPayment === "cash"
+                    ? "bg-yellow-50 border-yellow-200"
+                    : "bg-green-50 border-green-200"
+                }`}
+              >
                 <div className="flex items-center">
-                  {selectedPayment === 'cash' ? (
+                  {selectedPayment === "cash" ? (
                     <CurrencyRupeeIcon className="w-5 h-5 text-yellow-600 mr-3" />
                   ) : (
                     <CreditCardIcon className="w-5 h-5 text-green-600 mr-3" />
                   )}
                   <div>
-                    <span className="font-medium capitalize">{selectedPayment || "Cash"}</span>
-                    <p className={`text-xs ${
-                      selectedPayment === 'cash' ? 'text-yellow-600' : 'text-green-600'
-                    }`}>
-                      {selectedPayment === 'cash' ? 'Pay at end of trip' : 'Payment completed'}
+                    <span className="font-medium capitalize">
+                      {selectedPayment || "Cash"}
+                    </span>
+                    <p
+                      className={`text-xs ${
+                        selectedPayment === "cash"
+                          ? "text-yellow-600"
+                          : "text-green-600"
+                      }`}
+                    >
+                      {selectedPayment === "cash"
+                        ? "Pay at end of trip"
+                        : "Payment completed"}
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="font-bold text-lg">{selectedVehicle?.price || "₹299"}</span>
+                  <span className="font-bold text-lg">
+                    {selectedVehicle?.price || "₹299"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -291,7 +315,7 @@ function Riding({
         </motion.div>
       </motion.div>
     </div>
-  )
+  );
 }
 
-export default Riding
+export default Riding;
