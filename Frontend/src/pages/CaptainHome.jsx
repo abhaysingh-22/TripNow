@@ -320,7 +320,7 @@ const CaptainHome = () => {
           <img
             src={TripNowBlack}
             alt="TripNow Logo"
-            className="w-12 h-5 sm:w-15 sm:h-7"
+            className="w-15 h-15 sm:w-15 sm:h-7"
           />
         </div>
 
