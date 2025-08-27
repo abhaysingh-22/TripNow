@@ -363,7 +363,7 @@ function CaptainRiding() {
       <header className="absolute top-0 left-0 right-0 z-20 flex justify-between items-center p-3 sm:p-4 bg-white bg-opacity-90 shadow-md">
         <div className="flex items-center">
           <img
-            src={isDarkMode ? TripNow : TripNowBlack}
+            src={TripNowBlack}
             alt="TripNow Logo"
             className="w-12 h-6 sm:w-15 sm:h-7"
           />
