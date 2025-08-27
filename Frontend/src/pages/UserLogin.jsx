@@ -92,7 +92,7 @@ function UserLogin() {
             <img
               className="w-14 sm:w-16 md:w-20 transition-all duration-300 hover:scale-105"
               src={isDarkMode ? TripNow : TripNowBlack}
-              alt="Uber Logo"
+              alt="TripNow Logo"
             />
             <button
               onClick={() => setIsDarkMode(!isDarkMode)}
