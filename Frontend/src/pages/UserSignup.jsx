@@ -2,6 +2,8 @@ import React, { useState, useEffect, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { UserContext } from "../context/UserContext.jsx";
+import TripNow from "../assets/TripNow.png";
+import TripNowBlack from "../assets/TripNowBlack.png";
 
 const UserSignup = () => {
   const [email, setEmail] = useState("");
@@ -26,10 +28,10 @@ const UserSignup = () => {
   const submitHandler = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     // Add validation
     if (!firstName.trim() || !lastName.trim()) {
-      alert('Please enter both first and last name');
+      alert("Please enter both first and last name");
       setIsLoading(false);
       return;
     }
@@ -45,15 +47,21 @@ const UserSignup = () => {
     };
 
     // Log the data being sent to debug
-    console.log('Sending data:', newUser);
-    console.log('API URL:', `${import.meta.env.VITE_BASE_URL}/api/users/register`);
+    console.log("Sending data:", newUser);
+    console.log(
+      "API URL:",
+      `${import.meta.env.VITE_BASE_URL}/api/users/register`
+    );
 
     try {
-      const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/api/users/register`, newUser);
+      const response = await axios.post(
+        `${import.meta.env.VITE_BASE_URL}/api/users/register`,
+        newUser
+      );
       if (response.status === 201) {
         const data = response.data;
         setUser(data.user);
-        localStorage.setItem('token', data.token);
+        localStorage.setItem("token", data.token);
         setShowPopup(true);
         setEmail("");
         setFirstName("");
@@ -65,28 +73,30 @@ const UserSignup = () => {
         }, 1500);
       }
     } catch (error) {
-      console.error('Registration error:', error);
-      console.error('Error response:', error.response?.data);
-      console.error('Error status:', error.response?.status);
-      console.error('Base URL:', import.meta.env.VITE_BASE_URL);
-      
-      let errorMessage = 'Registration failed. Please try again.';
-      
+      console.error("Registration error:", error);
+      console.error("Error response:", error.response?.data);
+      console.error("Error status:", error.response?.status);
+      console.error("Base URL:", import.meta.env.VITE_BASE_URL);
+
+      let errorMessage = "Registration failed. Please try again.";
+
       if (error.response?.status === 400) {
         // Handle validation errors
         if (error.response.data?.errors) {
           // If backend sends validation errors array
-          errorMessage = error.response.data.errors.map(err => err.msg).join(', ');
+          errorMessage = error.response.data.errors
+            .map((err) => err.msg)
+            .join(", ");
         } else if (error.response.data?.message) {
           // If backend sends a message
           errorMessage = error.response.data.message;
         } else {
-          errorMessage = 'Invalid data provided. Please check your inputs.';
+          errorMessage = "Invalid data provided. Please check your inputs.";
         }
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       alert(errorMessage);
     } finally {
       setIsLoading(false);
@@ -120,12 +130,8 @@ const UserSignup = () => {
           <div className="flex justify-between items-center mb-8">
             <img
               className="w-16 sm:w-20 transition-all duration-300 hover:scale-105"
-              src={
-                isDarkMode
-                  ? "https://cdn-assets-eu.frontify.com/s3/frontify-enterprise-files-eu/eyJwYXRoIjoid2VhcmVcL2ZpbGVcLzhGbTh4cU5SZGZUVjUxYVh3bnEyLnN2ZyJ9:weare:F1cOF9Bps96cMy7r9Y2d7affBYsDeiDoIHfqZrbcxAw?width=1200&height=417"
-                  : "https://w7.pngwing.com/pngs/801/240/png-transparent-uber-hd-logo.png"
-              }
-              alt="Uber Logo"
+              src={isDarkMode ? TripNow : TripNowBlack}
+              alt="TripNow Logo"
             />
             <button
               onClick={() => setIsDarkMode(!isDarkMode)}
