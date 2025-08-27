@@ -2,6 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { EllipsisVerticalIcon } from "@heroicons/react/24/solid";
 import toast from "react-hot-toast";
+import TripNowBlack from "../assets/TripNowBlack.png";
 
 const AppHeader = ({ hasActiveRide, onMenuClick, onGoBackToRide }) => {
   const handleMenuClick = () => {
@@ -28,8 +29,8 @@ const AppHeader = ({ hasActiveRide, onMenuClick, onGoBackToRide }) => {
             className="bg-white p-3 rounded-full shadow-lg cursor-pointer"
           >
             <img
-              src="https://w7.pngwing.com/pngs/801/240/png-transparent-uber-hd-logo.png"
-              alt="Uber"
+              src={TripNowBlack}
+              alt="TripNow Logo"
               className="w-8 h-8 object-contain"
             />
           </motion.div>
