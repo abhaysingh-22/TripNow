@@ -8,7 +8,7 @@ const API_BASE_URL = `${import.meta.env.VITE_BASE_URL}/api`;
 
 // Vehicle type mapping from frontend to backend
 const vehicleTypeMapping = {
-  1: "car", // UberGo
+  1: "car", // Standard
   2: "auto", // Auto
   3: "bike", // Bike
   4: "car", // Premier (also car category)
