@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { CaptainContext } from "../context/CaptainContext.jsx";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import TripNow from "../assets/TripNow.png";
+import TripNowBlack from "../assets/TripNowBlack.png";
 
 const CaptainSignup = () => {
   const [email, setEmail] = useState("");
@@ -135,12 +137,8 @@ const CaptainSignup = () => {
         <div className="flex justify-between items-center mb-4 flex-shrink-0">
           <img
             className="w-12 sm:w-16 md:w-20 transition-all duration-300 hover:scale-105"
-            src={
-              isDarkMode
-                ? "https://cdn-assets-eu.frontify.com/s3/frontify-enterprise-files-eu/eyJwYXRoIjoid2VhcmVcL2ZpbGVcLzhGbTh4cU5SZGZUVjUxYVh3bnEyLnN2ZyJ9:weare:F1cOF9Bps96cMy7r9Y2d7affBYsDeiDoIHfqZrbcxAw?width=1200&height=417"
-                : "https://w7.pngwing.com/pngs/801/240/png-transparent-uber-hd-logo.png"
-            }
-            alt="Uber Logo"
+            src={isDarkMode ? TripNow : TripNowBlack}
+            alt="TripNow Logo"
           />
           <button
             onClick={() => setIsDarkMode(!isDarkMode)}
