@@ -23,15 +23,11 @@ const AppHeader = ({ hasActiveRide, onMenuClick, onGoBackToRide }) => {
           transition={{ type: "spring", stiffness: 100, damping: 20 }}
           className="ml-2"
         >
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="bg-white p-3 rounded-full shadow-lg cursor-pointer"
-          >
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <img
               src={TripNowBlack}
               alt="TripNow Logo"
-              className="w-8 h-8 object-contain"
+              className="w-15 h-15 object-contain"
             />
           </motion.div>
         </motion.div>
