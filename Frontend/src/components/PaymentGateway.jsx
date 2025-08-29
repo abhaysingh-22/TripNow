@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
-import { createPayment } from "../../../Backend/services/payment.service";
 
 function PaymentGateway({ rideData, onPaymentSuccess, onPaymentCancel }) {
   const [isLoading, setIsLoading] = useState(true);
