@@ -286,6 +286,15 @@ const completeRide = async (req, res) => {
       { new: true }
     );
 
+    if (ride.userId.socketId) {
+      sendMessageToSocketId(ride.userId.socketId, "ride-completed", {
+        rideId: ride._id,
+        paymentMethod: ride.paymentMethod,
+        amount: fare,
+        message: "Your ride has been completed",
+      });
+    }
+
     res.status(200).json({
       success: true,
       message: "Ride completed successfully",
@@ -296,6 +305,7 @@ const completeRide = async (req, res) => {
         distance: ride.distance,
         duration: ride.duration,
         completedAt: ride.completedAt,
+        paymentMethod: ride.paymentMethod,
       },
       captain: {
         totalRides: updatedCaptain.totalRides,
