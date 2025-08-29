@@ -15,6 +15,7 @@ import WaitingForDriver from "../components/WaitingForDriver";
 import Riding from "./Riding";
 import LoadingScreen from "../components/LoadingScreen";
 import VehiclePanel from "../components/VehiclePanel";
+import PaymentGateway from "../components/PaymentGateway";
 
 // Custom Hooks
 import { useSuggestions } from "../hooks/useSuggestions";
@@ -187,6 +188,9 @@ function Home() {
   // ✅ Add this state near other state declarations (around line 85)
   const [showOTP, setShowOTP] = useState(false);
   const [userOTP, setUserOTP] = useState(null);
+
+  const [showPayment, setShowPayment] = useState(false);
+  const [pendingRideData, setPendingRideData] = useState(null);
 
   // Around line 90-100, ADD these state variables:
 
@@ -461,57 +465,77 @@ function Home() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showSuggestions, setShowSuggestions]);
 
-  // ...existing code...
   useEffect(() => {
     if (!onMessage) return;
 
-    // ✅ Listen for the message event
-    const cleanup1 = onMessage("message", (data) => {
-      if (data.type === "ride-completed") {
-        console.log("🏠 Ride completed - resetting user UI");
-        // Close all panels and reset states
-        setShowRiding(false);
-        setHasActiveRide(false);
-        setShowConfirmRide(false);
-        setShowRideOptions(false);
-        setShowLookingForDriver(false);
-        setShowWaitingForDriver(false);
-        setIsSidePanelOpen(false);
-        setIsPanelMinimized(false);
-        setCurrentRide(null);
-        setPickup("");
-        setDestination("");
-        setUserOTP(null);
-        setShowOTP(false);
-        toast.success("Ride completed!");
+    console.log("🔌 Setting up ride-completed listener");
+
+    const cleanup = onMessage("ride-completed", (data) => {
+      console.log("🏁 RIDE COMPLETED EVENT RECEIVED:");
+      console.log("📋 Full data:", JSON.stringify(data, null, 2));
+      console.log("💳 Payment method:", data.paymentMethod);
+      console.log("💰 Amount:", data.amount);
+      console.log("🆔 Ride ID:", data.rideId);
+
+      // Check if payment is required (UPI method)
+      if (data.paymentMethod === "upi") {
+        console.log("🚀 UPI PAYMENT REQUIRED - SHOWING PAYMENT GATEWAY");
+
+        const paymentRideData = {
+          _id: data.rideId,
+          amount: data.amount,
+          paymentMethod: data.paymentMethod,
+          destination: currentRide?.destination || { address: "Destination" },
+          user: currentRide?.user || { name: "User" },
+        };
+
+        console.log("📦 Setting pendingRideData:", paymentRideData);
+        setPendingRideData(paymentRideData);
+        setShowPayment(true);
+
+        console.log("✅ Payment gateway should now be visible");
+      } else {
+        // Cash payment - direct completion
+        console.log("💵 CASH PAYMENT - DIRECT COMPLETION");
+        completeRideFlow();
       }
     });
 
-    // ✅ Keep this as backup
-    const cleanup2 = onMessage("ride-completed", () => {
-      console.log("🏠 Direct ride completed - resetting UI");
-      setShowRiding(false);
-      setHasActiveRide(false);
-      setShowConfirmRide(false);
-      setShowRideOptions(false);
-      setShowLookingForDriver(false);
-      setShowWaitingForDriver(false);
-      setIsSidePanelOpen(false);
-      setIsPanelMinimized(false);
-      setCurrentRide(null);
-      setPickup("");
-      setDestination("");
-      setUserOTP(null);
-      setShowOTP(false);
-      toast.success("Back to home");
-    });
+    return cleanup;
+  }, [onMessage, currentRide]);
 
-    return () => {
-      cleanup1();
-      cleanup2();
-    };
-  }, [onMessage]);
-  // ...existing code...
+  const completeRideFlow = () => {
+    console.log("🏠 Completing ride flow - resetting all states");
+    setShowRiding(false);
+    setHasActiveRide(false);
+    setShowConfirmRide(false);
+    setShowRideOptions(false);
+    setShowLookingForDriver(false);
+    setShowWaitingForDriver(false);
+    setIsSidePanelOpen(false);
+    setIsPanelMinimized(false);
+    setCurrentRide(null);
+    setPickup("");
+    setDestination("");
+    setUserOTP(null);
+    setShowOTP(false);
+    setShowPayment(false);
+    setPendingRideData(null);
+    toast.success("Ride completed successfully!");
+  };
+
+  // ✅ ADD these missing payment handler functions
+  const handlePaymentSuccess = (paymentData) => {
+    console.log("✅ Payment successful:", paymentData);
+    completeRideFlow();
+  };
+
+  const handlePaymentCancel = () => {
+    console.log("❌ Payment cancelled");
+    setShowPayment(false);
+    setPendingRideData(null);
+    toast.error("Payment cancelled");
+  };
 
   useEffect(() => {
     if (!onMessage) return;
@@ -790,6 +814,18 @@ function Home() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Payment Gateway */}
+      {showPayment && pendingRideData && (
+        <div>
+          {console.log("🎨 RENDERING PAYMENT GATEWAY")}
+          <PaymentGateway
+            rideData={pendingRideData}
+            onPaymentSuccess={handlePaymentSuccess}
+            onPaymentCancel={handlePaymentCancel}
+          />
+        </div>
+      )}
 
       <Toaster position="top-center" />
     </div>
