@@ -31,7 +31,7 @@ const paymentSchema = new mongoose.Schema({
   razorpayPaymentId: {
     type: String,
   },
-  razorpaySignatureId: {
+  razorpaySignature: {
     type: String,
   },
   status: {
