@@ -3,7 +3,7 @@ import paymentService from "../services/payment.service.js";
 import Ride from "../models/ride.model.js";
 import Payment from "../models/payment.model.js";
 
-const createPaymentOrder = async (res, req) => {
+const createPaymentOrder = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
@@ -36,7 +36,7 @@ const createPaymentOrder = async (res, req) => {
     const payment = await paymentService.createPayment({
       rideId,
       userId,
-      cpatainId: ride.captainId,
+      captainId: ride.captainId,
       paymentMethod: "upi",
       amount,
       razorpayOrderId: razorpayOrder.id,
