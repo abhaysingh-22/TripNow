@@ -4,15 +4,22 @@ import toast from "react-hot-toast";
 
 function PaymentGateway({ rideData, onPaymentSuccess, onPaymentCancel }) {
   const [isLoading, setIsLoading] = useState(true);
-  const [paymentOder, setPaymentOrder] = useState(null);
+  const [paymentOrder, setPaymentOrder] = useState(null);
 
   useEffect(() => {
+    console.log("🚀 PaymentGateway mounted with rideData:", rideData);
     createPaymentOrder();
   }, []);
 
   const createPaymentOrder = async () => {
     try {
+      console.log("📝 Creating payment order for ride:", rideData._id);
+
       const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
       const response = await fetch(
         `${import.meta.env.VITE_BASE_URL}/api/payments/create-order`,
         {
@@ -29,6 +36,7 @@ function PaymentGateway({ rideData, onPaymentSuccess, onPaymentCancel }) {
       );
 
       const data = await response.json();
+      console.log("📦 Payment order response:", data);
 
       if (!response.ok) {
         throw new Error(data.error || "Failed to create payment order");
@@ -37,15 +45,24 @@ function PaymentGateway({ rideData, onPaymentSuccess, onPaymentCancel }) {
       setPaymentOrder(data);
       setIsLoading(false);
 
+      // Initialize Razorpay payment
       initializeRazorpay(data);
     } catch (error) {
-      console.error("Payment order creation failed: ", error);
-      toast.error("Failed to initialize payment");
+      console.error("❌ Payment order creation failed:", error);
+      toast.error(`Failed to initialize payment: ${error.message}`);
       onPaymentCancel();
     }
   };
 
   const initializeRazorpay = (orderData) => {
+    console.log("🎯 Initializing Razorpay with:", orderData);
+
+    if (!window.Razorpay) {
+      toast.error("Payment gateway not loaded. Please refresh the page.");
+      onPaymentCancel();
+      return;
+    }
+
     const options = {
       key: orderData.key,
       amount: orderData.order.amount,
@@ -56,29 +73,39 @@ function PaymentGateway({ rideData, onPaymentSuccess, onPaymentCancel }) {
       }`,
       order_id: orderData.order.id,
       handler: async (response) => {
-        await verifyPayment(response, orderData, orderData.paymentId);
+        console.log("✅ Payment successful:", response);
+        await verifyPayment(response, orderData.paymentId);
       },
       prefill: {
         name: rideData.user?.name || "User",
-        email: rideData.user?.email || "jhonnypins@gamil.com",
-        contact: rideData.user?.phone || "XXXX",
+        email: rideData.user?.email || "user@example.com",
+        contact: rideData.user?.phone || "9999999999",
       },
       theme: {
         color: "#000000",
       },
       modal: {
         ondismiss: () => {
+          console.log("🚫 Payment modal dismissed");
           onPaymentCancel();
         },
       },
     };
 
     const rzp = new window.Razorpay(options);
+    rzp.on("payment.failed", function (response) {
+      console.error("💸 Payment failed:", response.error);
+      toast.error(`Payment failed: ${response.error.description}`);
+      onPaymentCancel();
+    });
+
     rzp.open();
   };
 
   const verifyPayment = async (response, paymentId) => {
     try {
+      console.log("🔍 Verifying payment:", { paymentId, response });
+
       const token = localStorage.getItem("token");
       const verifyResponse = await fetch(
         `${import.meta.env.VITE_BASE_URL}/api/payments/verify`,
@@ -98,6 +125,7 @@ function PaymentGateway({ rideData, onPaymentSuccess, onPaymentCancel }) {
       );
 
       const data = await verifyResponse.json();
+      console.log("✅ Payment verification response:", data);
 
       if (!verifyResponse.ok) {
         throw new Error(data.error || "Payment verification failed");
@@ -106,8 +134,8 @@ function PaymentGateway({ rideData, onPaymentSuccess, onPaymentCancel }) {
       toast.success("Payment completed successfully!");
       onPaymentSuccess(data.payment);
     } catch (error) {
-      console.error("Payment verification failed: ", error);
-      toast.error("Payment verification failed");
+      console.error("❌ Payment verification failed:", error);
+      toast.error(`Payment verification failed: ${error.message}`);
       onPaymentCancel();
     }
   };
