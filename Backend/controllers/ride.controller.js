@@ -287,12 +287,27 @@ const completeRide = async (req, res) => {
     );
 
     if (ride.userId.socketId) {
-      sendMessageToSocketId(ride.userId.socketId, "ride-completed", {
+      const messageData = {
         rideId: ride._id,
         paymentMethod: ride.paymentMethod,
         amount: fare,
         message: "Your ride has been completed",
-      });
+      };
+
+      console.log("📤 SENDING RIDE COMPLETION MESSAGE:");
+      console.log("🎯 Target Socket ID:", ride.userId.socketId);
+      console.log("📋 Message Data:", JSON.stringify(messageData, null, 2));
+      console.log("💳 Payment Method Being Sent:", ride.paymentMethod);
+
+      const messageSent = sendMessageToSocketId(
+        ride.userId.socketId,
+        "ride-completed",
+        messageData
+      );
+
+      console.log("📨 Message sent successfully:", messageSent);
+    } else {
+      console.error("❌ No socket ID found for user:", ride.userId._id);
     }
 
     res.status(200).json({
