@@ -8,7 +8,7 @@ const router = Router();
 router.post(
   "/create-order",
   [
-    body("rideId").isMongoId().withMessage("Valid ride ID is reuqired"),
+    body("rideId").isMongoId().withMessage("Valid ride ID is required"),
     body("amount").isNumeric().withMessage("Amount must be a number"),
   ],
   authUser,
@@ -18,7 +18,7 @@ router.post(
 router.post(
   "/verify",
   [
-    body("paymentId").isMongoId().withMessage("Valid payment ID is reuqired"),
+    body("paymentId").isMongoId().withMessage("Valid payment ID is required"),
     body("razorpayOrderId")
       .isString()
       .notEmpty()
