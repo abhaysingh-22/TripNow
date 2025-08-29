@@ -266,7 +266,7 @@ const completeRide = async (req, res) => {
         duration: duration,
       },
       { new: true }
-    );
+    ).populate("userId");
 
     if (!ride) {
       return res.status(404).json({
@@ -286,7 +286,7 @@ const completeRide = async (req, res) => {
       { new: true }
     );
 
-    if (ride.userId.socketId) {
+    if (ride.userId && ride.userId.socketId) {
       const messageData = {
         rideId: ride._id,
         paymentMethod: ride.paymentMethod,
@@ -307,7 +307,11 @@ const completeRide = async (req, res) => {
 
       console.log("📨 Message sent successfully:", messageSent);
     } else {
-      console.error("❌ No socket ID found for user:", ride.userId._id);
+      console.error(
+        "❌ No socket ID found for user:",
+        ride.userId?._id || "unknown"
+      );
+      console.error("❌ User data:", ride.userId);
     }
 
     res.status(200).json({
