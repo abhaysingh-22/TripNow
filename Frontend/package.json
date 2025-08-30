@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "kill-port 5173 && vite",
-    "kill-old" : "kill-port 5173",
+    "kill-old": "kill-port 5173",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -13,6 +13,7 @@
   "dependencies": {
     "@gsap/react": "^2.1.2",
     "@heroicons/react": "^2.2.0",
+    "@react-google-maps/api": "^2.20.7",
     "@tailwindcss/vite": "^4.1.11",
     "axios": "^1.10.0",
     "framer-motion": "^12.23.6",
