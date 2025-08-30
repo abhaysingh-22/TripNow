@@ -11,7 +11,7 @@ import {
   XMarkIcon,
   HomeIcon,
 } from "@heroicons/react/24/solid";
-import mapVideo from "../assets/maps.mp4";
+import LiveTracking from "../components/LiveTracking";
 
 function Riding({
   selectedVehicle,
@@ -41,6 +41,12 @@ function Riding({
         ? "Honda Activa"
         : "Toyota Innova",
     carColor: "White",
+  };
+
+  // Handle user location updates during ride
+  const handleUserLocationUpdate = (location) => {
+    console.log("User location update during ride:", location);
+    // You can send this to backend if needed
   };
 
   const panelVariants = {
@@ -90,23 +96,37 @@ function Riding({
 
   return (
     <div className="h-screen w-full overflow-hidden fixed inset-0 bg-black">
-      {/* Live Map */}
-      <div className="absolute inset-0">
-        <video
-          className="h-full w-full object-cover"
-          autoPlay
-          loop
-          muted
-          playsInline
-        >
-          <source src={mapVideo} type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
-        <div className="absolute inset-0 bg-black/10"></div>
+      {/* ✅ LIVE TRACKING MAP - Replace video with Google Maps */}
+      <div className="absolute inset-0 z-0">
+        <LiveTracking
+          pickup={
+            pickup
+              ? {
+                  lat: pickup.latitude || 0,
+                  lng: pickup.longitude || 0,
+                }
+              : null
+          }
+          destination={
+            destination
+              ? {
+                  lat: destination.latitude || 0,
+                  lng: destination.longitude || 0,
+                }
+              : null
+          }
+          rideStatus="in-progress"
+          onLocationUpdate={handleUserLocationUpdate}
+        />
       </div>
 
       {/* Top Status Bar */}
-      <div className="absolute top-0 left-0 right-0 z-20 bg-white/90 backdrop-blur-md border-b">
+      <motion.div
+        className="absolute top-0 left-0 right-0 z-20 bg-white/95 backdrop-blur-md border-b shadow-sm"
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.3 }}
+      >
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center space-x-3">
             <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
@@ -127,7 +147,7 @@ function Riding({
             </motion.button>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Expandable Bottom Panel */}
       <motion.div
@@ -235,7 +255,9 @@ function Riding({
                 <div>
                   <p className="text-gray-400 font-medium text-sm mb-1">FROM</p>
                   <p className="font-medium text-gray-900">
-                    {pickup || "Pickup Location"}
+                    {typeof pickup === "string"
+                      ? pickup
+                      : pickup?.address || "Pickup Location"}
                   </p>
                 </div>
 
@@ -244,7 +266,9 @@ function Riding({
                 <div>
                   <p className="text-gray-400 font-medium text-sm mb-1">TO</p>
                   <p className="font-medium text-gray-900">
-                    {destination || "Destination"}
+                    {typeof destination === "string"
+                      ? destination
+                      : destination?.address || "Destination"}
                   </p>
                 </div>
               </div>
@@ -287,6 +311,20 @@ function Riding({
                   <span className="font-bold text-lg">
                     {selectedVehicle?.price || "₹299"}
                   </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Live Tracking Status */}
+            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
+              <h4 className="font-bold mb-3 text-blue-900">Live Tracking</h4>
+              <div className="flex items-center space-x-3">
+                <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                <div>
+                  <p className="text-blue-800 font-medium">GPS Active</p>
+                  <p className="text-xs text-blue-600">
+                    Your location is being tracked for safety
+                  </p>
                 </div>
               </div>
             </div>
