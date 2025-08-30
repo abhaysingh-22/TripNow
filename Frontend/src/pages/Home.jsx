@@ -16,13 +16,11 @@ import Riding from "./Riding";
 import LoadingScreen from "../components/LoadingScreen";
 import VehiclePanel from "../components/VehiclePanel";
 import PaymentGateway from "../components/PaymentGateway";
+import LiveTracking from "../components/LiveTracking";
 
 // Custom Hooks
 import { useSuggestions } from "../hooks/useSuggestions";
 import { useRideManagement } from "../hooks/useRideManagement";
-
-// Assets
-import mapVideo from "../assets/maps.mp4";
 
 // Animation variants
 const panelVariants = {
@@ -64,7 +62,7 @@ const formVariants = {
   minimized: { height: 0, opacity: 0, marginTop: 0, overflow: "hidden" },
 };
 
-// ✅ Add this new component inside Home.jsx (after imports, before Home function)
+// OTP Display Component
 const OTPDisplay = ({ otp, onClose }) => {
   if (!otp) return null;
 
@@ -185,17 +183,14 @@ function Home() {
   const [currentRide, setCurrentRide] = useState(null);
   const [isSubmittingRide, setIsSubmittingRide] = useState(false);
 
-  // ✅ Add this state near other state declarations (around line 85)
+  // OTP and Payment states
   const [showOTP, setShowOTP] = useState(false);
   const [userOTP, setUserOTP] = useState(null);
-
   const [showPayment, setShowPayment] = useState(false);
   const [pendingRideData, setPendingRideData] = useState(null);
 
-  // Around line 90-100, ADD these state variables:
-
-  // const [showLookingForDriver, setShowLookingForDriver] = useState(false);
-  // const [showWaitingForDriver, setShowWaitingForDriver] = useState(false);
+  // Live tracking states
+  const [captainLocation, setCaptainLocation] = useState(null);
 
   // Custom hooks
   const {
@@ -242,6 +237,32 @@ function Home() {
     setHasActiveRide,
   } = useRideManagement();
 
+  // Listen for captain location updates
+  useEffect(() => {
+    if (!onMessage) return;
+
+    const cleanup = onMessage("captain-location-update", (data) => {
+      console.log("📍 Captain location update:", data);
+      setCaptainLocation({
+        lat: data.latitude,
+        lng: data.longitude,
+      });
+    });
+
+    return cleanup;
+  }, [onMessage]);
+
+  // Handle user location updates
+  const handleUserLocationUpdate = (location) => {
+    if (sendMessage && hasActiveRide && currentRide?._id) {
+      sendMessage("user-location-update", {
+        rideId: currentRide._id,
+        latitude: location.lat,
+        longitude: location.lng,
+      });
+    }
+  };
+
   // Update the handleCreateRide function:
   const handleCreateRide = useCallback(
     async (rideData) => {
@@ -255,7 +276,7 @@ function Home() {
         const token = localStorage.getItem("token") || user?.token;
 
         const res = await fetch(
-          `${import.meta.env.VITE_BASE_URL}/api/rides/confirm`, // ✅ Fixed endpoint
+          `${import.meta.env.VITE_BASE_URL}/api/rides/confirm`,
           {
             method: "POST",
             headers: {
@@ -281,8 +302,8 @@ function Home() {
 
         setCurrentRide({
           ...data.ride,
-          _id: data.ride._id, // ✅ Use the ride ID from confirmRide response
-          otp: data.ride.otp, // ✅ Use the OTP from confirmRide response
+          _id: data.ride._id,
+          otp: data.ride.otp,
         });
 
         if (data.ride?.otp) {
@@ -304,11 +325,10 @@ function Home() {
         setIsSubmittingRide(false);
       }
     },
-    [user, setShowConfirmRide, setShowLookingForDriver, setShowWaitingForDriver] // ✅ Add handleConfirmPickup to dependencies
+    [user, setShowConfirmRide, setShowLookingForDriver, setShowWaitingForDriver]
   );
 
-  // Around line 247-290, REPLACE both socket listeners with this single one:
-
+  // Socket listener for ride acceptance
   useEffect(() => {
     const cleanup = onMessage("ride-accepted", (data) => {
       console.log("🎉 Captain accepted ride:", data);
@@ -324,17 +344,15 @@ function Home() {
 
       // Handle OTP
       if (data.ride?.otp) {
-        // setUserOTP(data.otp);
-        // setShowOTP(true);
         console.log("✅ OTP updated from socket:", data.ride.otp);
       }
 
-      // ✅ TRIGGER PANEL TRANSITIONS
+      // Trigger panel transitions
       console.log("✅ Showing LookingForDriver panel");
       setShowLookingForDriver(true);
       setShowWaitingForDriver(false);
 
-      // ✅ After 3 seconds, switch to WaitingForDriver
+      // After 3 seconds, switch to WaitingForDriver
       setTimeout(() => {
         console.log("✅ Switched to WaitingForDriver panel");
         setShowLookingForDriver(false);
@@ -349,8 +367,6 @@ function Home() {
 
     return cleanup;
   }, [onMessage, setShowLookingForDriver, setShowWaitingForDriver]);
-
-  // ✅ REMOVE the second useEffect with "ride-accepted-by-captain" entirely
 
   const handleInputChange = useCallback(
     (value, inputType) => {
@@ -426,7 +442,6 @@ function Home() {
   );
 
   const handleBackToLocationForm = useCallback(() => {
-    // Reset all ride-related states to go back to the form
     handleBackToLocations();
     setIsPanelMinimized(false);
   }, [handleBackToLocations]);
@@ -465,6 +480,7 @@ function Home() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showSuggestions, setShowSuggestions]);
 
+  // Ride completion listener
   useEffect(() => {
     if (!onMessage) return;
 
@@ -521,10 +537,11 @@ function Home() {
     setShowOTP(false);
     setShowPayment(false);
     setPendingRideData(null);
+    setCaptainLocation(null);
     toast.success("Ride completed successfully!");
   };
 
-  // ✅ ADD these missing payment handler functions
+  // Payment handler functions
   const handlePaymentSuccess = (paymentData) => {
     console.log("✅ Payment successful:", paymentData);
     completeRideFlow();
@@ -540,9 +557,8 @@ function Home() {
   useEffect(() => {
     if (!onMessage) return;
 
-    // listen for server push updates about an active ride (distance/duration/eta etc.)
+    // listen for server push updates about an active ride
     const cleanup = onMessage("ride-update", (data) => {
-      // data may be { rideId, distance, duration, ... } or full ride
       const rideUpdate = data.ride || data;
       const rideId = data.rideId || rideUpdate._id || rideUpdate.id;
 
@@ -586,8 +602,8 @@ function Home() {
         onGoBackToRide={handleGoBackToRide}
       />
 
-      {/* ✅ Move OTP Display here with AnimatePresence */}
-      {/* <AnimatePresence>
+      {/* OTP Display
+      <AnimatePresence>
         {showOTP && userOTP && (
           <OTPDisplay
             otp={userOTP}
@@ -600,26 +616,39 @@ function Home() {
         )}
       </AnimatePresence> */}
 
-      {/* Map Section */}
-      <motion.div
-        className="absolute inset-0"
-        animate={{
-          x: isSidePanelOpen ? (window.innerWidth < 768 ? 0 : "-15rem") : 0,
-        }}
-        transition={{ type: "spring", stiffness: 100, damping: 20 }}
-      >
-        <div className="absolute inset-0 bg-black/20 z-10"></div>
-        <video
-          className="h-full w-full object-cover"
-          autoPlay
-          loop
-          muted
-          playsInline
-        >
-          <source src={mapVideo} type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
-      </motion.div>
+      {/* Live Tracking Map */}
+      <div className="absolute inset-0 z-0">
+        <LiveTracking
+          pickup={
+            currentRide?.pickup
+              ? {
+                  lat: currentRide.pickup.latitude || 0,
+                  lng: currentRide.pickup.longitude || 0,
+                }
+              : null
+          }
+          destination={
+            currentRide?.destination
+              ? {
+                  lat: currentRide.destination.latitude || 0,
+                  lng: currentRide.destination.longitude || 0,
+                }
+              : null
+          }
+          captainLocation={captainLocation}
+          rideStatus={
+            showRiding
+              ? "in-progress"
+              : showWaitingForDriver
+              ? "accepted"
+              : showLookingForDriver
+              ? "waiting"
+              : "default"
+          }
+          estimatedArrival={showWaitingForDriver ? "5 min" : undefined}
+          onLocationUpdate={handleUserLocationUpdate}
+        />
+      </div>
 
       {/* Backdrop */}
       <AnimatePresence>
@@ -634,7 +663,7 @@ function Home() {
         )}
       </AnimatePresence>
 
-      {/* ✅ ADD THIS SECTION - Ride Status Components (Outside Side Panel) */}
+      {/* Ride Status Components */}
       <AnimatePresence mode="wait">
         {showLookingForDriver && (
           <motion.div
