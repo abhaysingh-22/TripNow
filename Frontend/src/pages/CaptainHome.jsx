@@ -1,7 +1,6 @@
 // CaptainHome.jsx - Main dashboard for captain to manage rides and status
 import React, { useState, useRef, useEffect, useContext } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import mapVideo from "../assets/maps.mp4";
 import toast from "react-hot-toast";
 import CaptainDetails from "../components/CaptainDetails";
 import RidePopup from "../components/RidePopup";
@@ -10,11 +9,11 @@ import { useSocket } from "../context/SocketContext.jsx";
 import { CaptainContext } from "../context/CaptainContext.jsx";
 import LoadingScreen from "../components/LoadingScreen.jsx";
 import TripNowBlack from "../assets/TripNowBlack.png";
+import LiveTracking from "../components/LiveTracking";
 
 const CaptainHome = () => {
   // UI State Management
   const [detailsExpanded, setDetailsExpanded] = useState(false);
-  const [mapZoom, setMapZoom] = useState(1);
   const [showRideRequest, setShowRideRequest] = useState(false);
   const [showConfirmRide, setShowConfirmRide] = useState(false);
   const [rideData, setRideData] = useState(null);
@@ -24,9 +23,6 @@ const CaptainHome = () => {
     const saved = localStorage.getItem("captainOnlineStatus");
     return saved ? JSON.parse(saved) : true;
   });
-
-  // Video reference for zoom functionality
-  const videoRef = useRef(null);
 
   const { captain } = useContext(CaptainContext);
   const { onMessage, sendMessage } = useSocket();
@@ -126,13 +122,19 @@ const CaptainHome = () => {
     }
   }, [isOnline]);
 
-  // Apply zoom effect to map video
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.style.transform = `scale(${mapZoom})`;
-      videoRef.current.style.transition = "transform 0.3s ease";
+  // Handle captain location updates
+  const handleCaptainLocationUpdate = (location) => {
+    console.log("Captain location update in CaptainHome:", location);
+
+    // Send location to backend and users if needed
+    if (sendMessage && captain) {
+      sendMessage("captain-location-update", {
+        captainId: captain._id,
+        latitude: location.lat,
+        longitude: location.lng,
+      });
     }
-  }, [mapZoom]);
+  };
 
   if (isLoading) {
     return (
@@ -151,8 +153,6 @@ const CaptainHome = () => {
   };
 
   const toggleDetailsPanel = () => setDetailsExpanded(!detailsExpanded);
-  const handleZoomIn = () => setMapZoom((prev) => Math.min(prev + 0.1, 1.5));
-  const handleZoomOut = () => setMapZoom((prev) => Math.max(prev - 0.1, 1));
 
   // Ride Management Handlers
   const handleAcceptRide = async (rideId) => {
@@ -299,19 +299,34 @@ const CaptainHome = () => {
 
   return (
     <div className="fixed inset-0 w-full h-full overflow-hidden">
-      {/* Background Map Video - Full screen with zoom capability */}
-      <div className="absolute inset-0 overflow-hidden">
-        <video
-          ref={videoRef}
-          className="absolute inset-0 w-full h-full object-cover origin-center"
-          autoPlay
-          loop
-          muted
-          playsInline
-        >
-          <source src={mapVideo} type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
+      {/* ✅ LIVE TRACKING MAP - Replace video with Google Maps */}
+      <div className="absolute inset-0 z-0">
+        <LiveTracking
+          pickup={
+            rideData?.pickup
+              ? {
+                  lat: rideData.pickup.latitude || 0,
+                  lng: rideData.pickup.longitude || 0,
+                }
+              : null
+          }
+          destination={
+            rideData?.destination
+              ? {
+                  lat: rideData.destination.latitude || 0,
+                  lng: rideData.destination.longitude || 0,
+                }
+              : null
+          }
+          captainLocation={{
+            lat: captain?.location?.latitude || 0,
+            lng: captain?.location?.longitude || 0,
+          }}
+          rideStatus={
+            showRideRequest || showConfirmRide ? "accepted" : "default"
+          }
+          onLocationUpdate={handleCaptainLocationUpdate}
+        />
       </div>
 
       {/* Header - Responsive padding and sizing */}
@@ -436,84 +451,6 @@ const CaptainHome = () => {
               : "Inactive - Can't take rides"}
           </span>
         </motion.div>
-      )}
-
-      {/* Map Controls - Zoom and location controls */}
-      {!detailsExpanded && !showRideRequest && !showConfirmRide && (
-        <div className="absolute bottom-[calc(25vh+10px)] right-4 sm:right-6 flex flex-col gap-2 z-30">
-          {/* Zoom In Button */}
-          <motion.button
-            className="bg-white rounded-full p-2 sm:p-3 shadow-lg"
-            onClick={handleZoomIn}
-            aria-label="Zoom in"
-            whileHover={{ scale: 1.1, backgroundColor: "#f9fafb" }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <svg
-              className="w-4 h-4 sm:w-6 sm:h-6 text-gray-700"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-              />
-            </svg>
-          </motion.button>
-
-          {/* Zoom Out Button */}
-          <motion.button
-            className="bg-white rounded-full p-2 sm:p-3 shadow-lg"
-            onClick={handleZoomOut}
-            aria-label="Zoom out"
-            whileHover={{ scale: 1.1, backgroundColor: "#f9fafb" }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <svg
-              className="w-4 h-4 sm:w-6 sm:h-6 text-gray-700"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M20 12H4"
-              />
-            </svg>
-          </motion.button>
-
-          {/* Center Location Button */}
-          <motion.button
-            className="bg-white rounded-full p-2 sm:p-3 shadow-lg"
-            whileHover={{ scale: 1.1, backgroundColor: "#f9fafb" }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <svg
-              className="w-4 h-4 sm:w-6 sm:h-6 text-gray-700"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-              />
-            </svg>
-          </motion.button>
-        </div>
       )}
     </div>
   );
