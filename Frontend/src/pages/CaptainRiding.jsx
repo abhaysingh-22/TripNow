@@ -3,29 +3,27 @@
 // This component handles the captain's view during an active ride with animations and state management
 import React, { useState, useRef, useEffect, useContext } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom";
-import mapVideo from "../assets/maps.mp4";
+import { useNavigate, useLocation } from "react-router-dom";
 import { CaptainContext } from "../context/CaptainContext.jsx";
 import { useSocket } from "../context/SocketContext.jsx";
-import TripNow from "../assets/TripNow.png";
 import TripNowBlack from "../assets/TripNowBlack.png";
+import LiveTracking from "../components/LiveTracking";
+import toast from "react-hot-toast";
 
 function CaptainRiding() {
-  // Add these imports and context
   const { captain } = useContext(CaptainContext);
   const { onMessage, sendMessage } = useSocket();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // Map interaction state
-  const [mapZoom, setMapZoom] = useState(1);
-  const [remainingTime, setRemainingTime] = useState(0);
-  const [remainingDistance, setRemainingDistance] = useState(0);
+  // State management
   const [isRideComplete, setIsRideComplete] = useState(false);
   const [showFinishPanel, setShowFinishPanel] = useState(false);
   const [showDestinationMessage, setShowDestinationMessage] = useState(false);
 
-  // ✅ Real ride data state instead of mock data
+  // Real ride data state
   const [rideData, setRideData] = useState({
-    id: "ride-123",
+    _id: "ride-123",
     user: {
       name: "Loading...",
       rating: 4.5,
@@ -36,30 +34,17 @@ function CaptainRiding() {
     duration: 25,
     pickup: {
       address: "Loading pickup location...",
-      time: "3 min away",
+      latitude: 0,
+      longitude: 0,
     },
     destination: {
       address: "Loading destination...",
-      time: "18 min",
+      latitude: 0,
+      longitude: 0,
     },
   });
 
-  // Refs and navigation
-  const videoRef = useRef(null);
-  const navigate = useNavigate();
-
-  // Simulation settings for demo - in production this would use real GPS data
-  const simulationSpeed = 500; // milliseconds between updates
-
-  // Apply smooth zoom transitions to the map video
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.style.transform = `scale(${mapZoom})`;
-      videoRef.current.style.transition = "transform 0.3s ease";
-    }
-  }, [mapZoom]);
-
-  // Show destination reached message after component mounts (for demo purposes)
+  // Show destination reached message after component mounts
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowDestinationMessage(true);
@@ -68,32 +53,33 @@ function CaptainRiding() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Set to always show destination reached for immediate testing/demo
-  const hasReachedDestination = true;
+  // Handle captain location updates during ride
+  const handleCaptainLocationUpdate = (locationData) => {
+    console.log("Captain location update during ride:", locationData);
 
-  // Map zoom controls - allows captains to zoom in/out on the map
-  const handleZoomIn = () => {
-    setMapZoom((prev) => Math.min(prev + 0.1, 1.5));
+    // Send captain location to user via socket
+    if (sendMessage && rideData?._id) {
+      sendMessage("captain-location-update", {
+        rideId: rideData._id,
+        latitude: locationData.lat,
+        longitude: locationData.lng,
+      });
+    }
   };
 
-  const handleZoomOut = () => {
-    setMapZoom((prev) => Math.max(prev - 0.1, 1));
-  };
-
-  // Handle ride completion - shows finish panel immediately
+  // Handle ride completion
   const handleCompleteRide = () => {
     console.log("Complete Ride button clicked!");
     setShowFinishPanel(true);
   };
 
-  // Close finish panel without completing ride
+  // Close finish panel
   const handleCloseFinishPanel = () => {
     setShowFinishPanel(false);
   };
 
-  // ...existing code...
+  // Finish ride and send to backend
   const handleRideFinished = async () => {
-    // ✅ Get real ride data from localStorage
     const activeRide = JSON.parse(localStorage.getItem("activeRide") || "{}");
     const rideId = activeRide._id || rideData._id || rideData.id;
     const earnings =
@@ -120,7 +106,7 @@ function CaptainRiding() {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            rideId: rideId, // ✅ Use real ride ID
+            rideId: rideId,
             fare: Number(earnings),
             distance: Number(distance),
             duration: Number(duration),
@@ -133,11 +119,8 @@ function CaptainRiding() {
 
       if (response.ok) {
         console.log("✅ Ride completed successfully on backend");
-
-        // ✅ Clear the active ride from localStorage
         localStorage.removeItem("activeRide");
 
-        // ✅ Dispatch custom event with REAL earnings
         window.dispatchEvent(
           new CustomEvent("rideCompleted", {
             detail: { rideId, earnings: Number(earnings) },
@@ -155,7 +138,6 @@ function CaptainRiding() {
       toast.error("Error completing ride: " + error.message);
     }
 
-    // ✅ Send socket message for user redirect
     if (sendMessage && rideId) {
       console.log("🚀 Broadcasting ride completion to all users");
       sendMessage("message", {
@@ -173,52 +155,56 @@ function CaptainRiding() {
       navigate("/captain-home");
     }, 3000);
   };
-  // ...existing code...
-  // ✅ REPLACE the entire useEffect that loads ride data (around line 160-190)
+
+  // Load real ride data from navigation state or localStorage
   useEffect(() => {
-    // Get ride data from location state (passed from ConfirmRidePopup after OTP verification)
     const { state } = location;
     console.log("📍 Location state in CaptainRiding:", state);
 
     if (state?.rideData) {
-      const { rideData } = state;
-      console.log("✅ Using real ride data from navigation state:", rideData);
+      const { rideData: navRideData } = state;
+      console.log(
+        "✅ Using real ride data from navigation state:",
+        navRideData
+      );
 
       setRideData({
-        _id: rideData._id || rideData.id, // ✅ Use real MongoDB _id
+        _id: navRideData._id || navRideData.id,
         user: {
-          name: rideData.user?.name || "Unknown User",
-          rating: rideData.user?.rating || 4.5,
+          name: navRideData.user?.name || "Unknown User",
+          rating: navRideData.user?.rating || 4.5,
           photo:
-            rideData.user?.photo ||
+            navRideData.user?.photo ||
             "https://randomuser.me/api/portraits/lego/1.jpg",
         },
-        amount: Number(rideData.amount || rideData.fare || 0),
-        distance: Number(rideData.distance || 0),
-        duration: Number(rideData.duration || 0),
+        amount: Number(navRideData.amount || navRideData.fare || 0),
+        distance: Number(navRideData.distance || 0),
+        duration: Number(navRideData.duration || 0),
         pickup: {
           address:
-            rideData.pickupLocation ||
-            rideData.pickup?.address ||
+            navRideData.pickupLocation ||
+            navRideData.pickup?.address ||
             "Pickup Location",
-          time: "Picked up",
+          latitude: navRideData.pickup?.latitude || 0,
+          longitude: navRideData.pickup?.longitude || 0,
         },
         destination: {
           address:
-            rideData.dropoffLocation ||
-            rideData.destination?.address ||
+            navRideData.dropoffLocation ||
+            navRideData.destination?.address ||
             "Destination",
-          time: "Arriving soon",
+          latitude: navRideData.destination?.latitude || 0,
+          longitude: navRideData.destination?.longitude || 0,
         },
       });
     } else {
-      // ✅ Fallback: Try to get from localStorage (if captain refreshes page)
+      // Fallback to localStorage
       const activeRide = JSON.parse(localStorage.getItem("activeRide") || "{}");
       console.log("📍 Fallback: Active ride from localStorage:", activeRide);
 
       if (activeRide && activeRide._id) {
         setRideData({
-          _id: activeRide._id, // ✅ Use real MongoDB _id
+          _id: activeRide._id,
           user: {
             name: activeRide.user?.name || "Unknown User",
             rating: activeRide.user?.rating || 4.5,
@@ -231,69 +217,22 @@ function CaptainRiding() {
           duration: Number(activeRide.duration || 0),
           pickup: {
             address: activeRide.pickupLocation || "Pickup Location",
-            time: "Picked up",
+            latitude: activeRide.pickup?.latitude || 0,
+            longitude: activeRide.pickup?.longitude || 0,
           },
           destination: {
             address: activeRide.dropoffLocation || "Destination",
-            time: "Arriving soon",
+            latitude: activeRide.destination?.latitude || 0,
+            longitude: activeRide.destination?.longitude || 0,
           },
         });
       } else {
         console.warn("⚠️ No real ride data found. Using mock data for demo.");
-        // Keep existing mock data as fallback
       }
     }
   }, [location]);
-  // ...existing code...
 
-  // ✅ Add useEffect to get real ride data
-  useEffect(() => {
-    // Get ride data from localStorage or API
-    const activeRide = JSON.parse(localStorage.getItem("activeRide") || "{}");
-    console.log("📍 Active ride from localStorage:", activeRide);
-
-    if (activeRide && Object.keys(activeRide).length > 0) {
-      // ✅ Extract user data from the ride structure
-      const userData = activeRide.user || {};
-
-      setRideData({
-        id: activeRide._id || activeRide.id || "ride-123",
-        user: {
-          name: userData.name || "Unknown User",
-          rating: userData.rating || 4.5,
-          photo:
-            userData.photo || "https://randomuser.me/api/portraits/lego/1.jpg",
-        },
-        amount: Number(activeRide.amount || activeRide.fare || 0),
-        distance: Number(activeRide.distance || 0),
-        duration: Number(activeRide.duration || 0),
-        pickup: {
-          address:
-            activeRide.pickupLocation ||
-            activeRide.pickup?.address ||
-            "Pickup Location",
-          time: activeRide.pickup?.time || "Picked up",
-        },
-        destination: {
-          address:
-            activeRide.dropoffLocation ||
-            activeRide.destination?.address ||
-            "Destination",
-          time: activeRide.destination?.time || "Arriving soon",
-        },
-      });
-
-      console.log("✅ Processed ride data for CaptainRiding:", {
-        id: activeRide._id,
-        user: userData,
-        amount: activeRide.amount || activeRide.fare,
-        pickup: activeRide.pickupLocation,
-        destination: activeRide.dropoffLocation,
-      });
-    }
-  }, []);
-
-  // ✅ Listen for ride updates
+  // Listen for ride updates
   useEffect(() => {
     if (!onMessage) return;
 
@@ -311,7 +250,7 @@ function CaptainRiding() {
     return cleanup;
   }, [onMessage]);
 
-  // Animation variants for consistent animations
+  // Animation variants
   const animations = {
     panel: {
       hidden: { y: "100%", opacity: 0 },
@@ -342,25 +281,37 @@ function CaptainRiding() {
   };
 
   return (
-    <div className="fixed inset-0 w-full h-full overflow-hidden m-0 p-0">
-      {/* Full-screen interactive map with zoom capability */}
-      <div className="absolute inset-0 overflow-hidden">
-        <video
-          ref={videoRef}
-          className="absolute inset-0 w-full h-full object-cover origin-center"
-          autoPlay
-          loop
-          muted
-          playsInline
-          aria-label="Navigation map showing current route"
-        >
-          <source src={mapVideo} type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
+    <div className="h-screen w-full overflow-hidden fixed inset-0 bg-gray-100">
+      {/* ✅ LIVE TRACKING MAP - Replace video with Google Maps */}
+      <div className="absolute inset-0 z-0">
+        <LiveTracking
+          pickup={
+            rideData.pickup
+              ? {
+                  lat: rideData.pickup.latitude || 0,
+                  lng: rideData.pickup.longitude || 0,
+                }
+              : null
+          }
+          destination={
+            rideData.destination
+              ? {
+                  lat: rideData.destination.latitude || 0,
+                  lng: rideData.destination.longitude || 0,
+                }
+              : null
+          }
+          captainLocation={{
+            lat: captain?.location?.latitude || 0,
+            lng: captain?.location?.longitude || 0,
+          }}
+          rideStatus="in-progress"
+          onLocationUpdate={handleCaptainLocationUpdate}
+        />
       </div>
 
-      {/* Header - TripNow branding and ride status indicator */}
-      <header className="absolute top-0 left-0 right-0 z-20 flex justify-between items-center p-3 sm:p-4 bg-white bg-opacity-90 shadow-md">
+      {/* Header */}
+      <header className="absolute top-0 left-0 right-0 z-20 flex justify-between items-center p-3 sm:p-4 bg-white/95 backdrop-blur-sm shadow-md">
         <div className="flex items-center">
           <img
             src={TripNowBlack}
@@ -369,7 +320,7 @@ function CaptainRiding() {
           />
         </div>
 
-        {/* Active ride status indicator with animation */}
+        {/* Active ride status indicator */}
         <div className="flex items-center">
           <div className="flex items-center bg-green-100 px-2 sm:px-3 py-1 rounded-full">
             <motion.div
@@ -390,55 +341,7 @@ function CaptainRiding() {
         </div>
       </header>
 
-      {/* Map zoom controls - positioned for easy thumb access */}
-      <div className="absolute top-16 sm:top-20 right-4 sm:right-6 flex flex-col gap-2 z-30">
-        {/* Zoom controls for map interaction */}
-        <motion.button
-          className="bg-white rounded-full p-2 sm:p-3 shadow-lg"
-          onClick={handleZoomIn}
-          aria-label="Zoom in"
-          whileHover={{ scale: 1.1, backgroundColor: "#f9fafb" }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <svg
-            className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-            />
-          </svg>
-        </motion.button>
-        <motion.button
-          className="bg-white rounded-full p-2 sm:p-3 shadow-lg"
-          onClick={handleZoomOut}
-          aria-label="Zoom out"
-          whileHover={{ scale: 1.1, backgroundColor: "#f9fafb" }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <svg
-            className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M20 12H4"
-            />
-          </svg>
-        </motion.button>
-      </div>
-
-      {/* Dynamic Bottom Panel - Contains ride info and controls */}
-      {/* Panel height adjusts based on current state: default, destination reached, or finish ride */}
+      {/* Dynamic Bottom Panel */}
       <motion.div
         className="absolute bottom-0 left-0 right-0 z-40 bg-white rounded-t-2xl shadow-lg overflow-hidden"
         initial={{ y: 0, height: "180px" }}
@@ -450,19 +353,17 @@ function CaptainRiding() {
             : "180px",
         }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        style={{ bottom: 0 }}
       >
-        {/* Panel drag handle for visual feedback */}
+        {/* Panel drag handle */}
         <div className="py-2 sm:py-3 px-4 flex justify-center cursor-pointer">
           <div className="w-8 sm:w-10 h-1 bg-gray-300 rounded-full"></div>
         </div>
 
-        {/* Scrollable content area - allows vertical scrolling when content exceeds panel height */}
+        {/* Scrollable content area */}
         <div className="h-full overflow-y-auto pb-6">
-          {/* Finish Ride Panel - Shows payment collection and ride completion interface */}
+          {/* Finish Ride Panel */}
           {showFinishPanel ? (
             <div className="p-4 sm:p-6 h-full overflow-y-auto">
-              {/* ✅ Inline FinishRide content instead of separate component */}
               <div className="text-center mb-4">
                 <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
                   <svg
@@ -521,7 +422,6 @@ function CaptainRiding() {
 
               {/* Trip Details */}
               <div className="space-y-3 mb-4">
-                {/* Pickup */}
                 <div className="flex items-center">
                   <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center mr-3">
                     <svg
@@ -541,7 +441,6 @@ function CaptainRiding() {
                   </div>
                 </div>
 
-                {/* Destination */}
                 <div className="flex items-center">
                   <div className="w-6 h-6 rounded-full bg-yellow-100 flex items-center justify-center mr-3">
                     <svg
@@ -617,7 +516,7 @@ function CaptainRiding() {
             </div>
           ) : (
             <>
-              {/* Destination Reached Notification - Appears after 3 second delay */}
+              {/* Destination Reached Notification */}
               <AnimatePresence>
                 {showDestinationMessage && (
                   <motion.div
@@ -724,8 +623,7 @@ function CaptainRiding() {
                   </div>
                 </div>
 
-                {/* Complete Ride Button - Only visible after destination message */}
-                {/* This button triggers the ride completion flow */}
+                {/* Complete Ride Button */}
                 <AnimatePresence>
                   {showDestinationMessage && (
                     <motion.div
@@ -758,8 +656,7 @@ function CaptainRiding() {
         </div>
       </motion.div>
 
-      {/* Ride Completion Success Message - Full screen overlay */}
-      {/* Shows when ride is marked as complete, with auto-navigation after 3 seconds */}
+      {/* Ride Completion Success Message */}
       <AnimatePresence>
         {isRideComplete && (
           <motion.div
@@ -775,7 +672,6 @@ function CaptainRiding() {
               animate={{ scale: 1, opacity: 1 }}
               transition={{ type: "spring", damping: 25 }}
             >
-              {/* Success icon */}
               <div className="w-12 h-12 sm:w-16 sm:h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
                 <svg
                   className="w-8 h-8 sm:w-10 sm:h-10 text-green-500"
@@ -792,7 +688,6 @@ function CaptainRiding() {
                 </svg>
               </div>
 
-              {/* Success message */}
               <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
                 Ride Completed!
               </h2>
