@@ -143,6 +143,22 @@ function initialiseSocket(server) {
       console.log("=== LOCATION UPDATE COMPLETE ===");
     });
 
+    // New event listeners for location updates
+    socket.on("user-location-update", (data) => {
+      console.log("User location update:", data);
+      // Update user location in database
+      // Send to captain if needed
+    });
+
+    socket.on("captain-location-update", (data) => {
+      console.log("Captain location update:", data);
+      // Send to user
+      io.to(data.userSocketId).emit("captain-location-update", {
+        latitude: data.latitude,
+        longitude: data.longitude,
+      });
+    });
+
     // ✅ Clean up socketId on disconnect
     socket.on("disconnect", async () => {
       console.log("=== SOCKET DISCONNECTED ===");
