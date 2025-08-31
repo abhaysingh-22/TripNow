@@ -1,6 +1,6 @@
 import rideService from "../services/ride.service.js";
-import { validationResult } from "express-validator";
 import mapsService from "../services/maps.service.js";
+import { validationResult } from "express-validator";
 import { sendMessageToSocketId } from "../socket.js";
 import Captain from "../models/captain.model.js";
 import Ride from "../models/ride.model.js";
@@ -294,24 +294,11 @@ const completeRide = async (req, res) => {
         message: "Your ride has been completed",
       };
 
-      console.log("📤 SENDING RIDE COMPLETION MESSAGE:");
-      console.log("🎯 Target Socket ID:", ride.userId.socketId);
-      console.log("📋 Message Data:", JSON.stringify(messageData, null, 2));
-      console.log("💳 Payment Method Being Sent:", ride.paymentMethod);
-
-      const messageSent = sendMessageToSocketId(
+      sendMessageToSocketId(
         ride.userId.socketId,
         "ride-completed",
         messageData
       );
-
-      console.log("📨 Message sent successfully:", messageSent);
-    } else {
-      console.error(
-        "❌ No socket ID found for user:",
-        ride.userId?._id || "unknown"
-      );
-      console.error("❌ User data:", ride.userId);
     }
 
     res.status(200).json({
@@ -338,7 +325,6 @@ const completeRide = async (req, res) => {
 };
 
 // Helper function for notifying nearby captains
-
 async function notifyNearbyCapitains(
   pickup,
   dropoff,
@@ -348,44 +334,34 @@ async function notifyNearbyCapitains(
   paymentMethod = null
 ) {
   try {
-    console.log("🔍 Starting captain notification process...");
-
     const trip = await rideService.getFareWithDetails(
       pickup,
       dropoff,
       vehicleType
     );
 
-    console.log("✅ Trip calculation successful:", trip);
-
-    // ✅ Try to get pickup coordinates with fallback
+    // Try to get pickup coordinates with fallback
     let pickupCoordinates;
     try {
       pickupCoordinates = await mapsService.getCoordinates(pickup);
-      console.log("✅ Got pickup coordinates:", pickupCoordinates);
     } catch (geocodingError) {
-      console.error("❌ Geocoding failed for pickup:", pickup);
-      console.error("Error:", geocodingError.message);
-
-      // ✅ Use fallback coordinates (Delhi center as example)
+      console.error("Geocoding failed for pickup:", pickup);
+      // Use fallback coordinates (Delhi center)
       pickupCoordinates = {
         latitude: 28.7041,
         longitude: 77.1025,
       };
-      console.log("⚠️ Using fallback coordinates:", pickupCoordinates);
     }
 
     const captainInRadius = await mapsService.getCaptainsInRadius(
       pickupCoordinates.latitude,
       pickupCoordinates.longitude,
-      10 // ✅ Increase radius to 10km for better coverage
+      10 // 10km radius
     );
-
-    console.log(`📍 Found ${captainInRadius.length} captains in radius`);
 
     if (captainInRadius.length === 0) {
       console.warn(
-        "⚠️ No captains found in radius. Ride request may not be delivered."
+        "No captains found in radius. Ride request may not be delivered."
       );
       return;
     }
@@ -394,10 +370,6 @@ async function notifyNearbyCapitains(
 
     captainInRadius.forEach((captain) => {
       if (captain.socketId) {
-        console.log(
-          `📤 Sending ride request to captain: ${captain._id} (socket: ${captain.socketId})`
-        );
-
         const rideRequestData = {
           type: "newRide",
           ride: {
@@ -435,17 +407,10 @@ async function notifyNearbyCapitains(
           "ride-request",
           rideRequestData
         );
-
-        console.log("✅ Ride request sent successfully");
-      } else {
-        console.log(
-          `⚠️ Captain ${captain._id} has no active socket connection`
-        );
       }
     });
   } catch (error) {
-    console.error("❌ Background processing error:", error);
-    console.error("Stack trace:", error.stack);
+    console.error("Background processing error:", error);
   }
 }
 
