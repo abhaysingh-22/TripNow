@@ -5,11 +5,42 @@ import toast from "react-hot-toast";
 function PaymentGateway({ rideData, onPaymentSuccess, onPaymentCancel }) {
   const [isLoading, setIsLoading] = useState(true);
   const [paymentOrder, setPaymentOrder] = useState(null);
+  const [scriptLoaded, setScriptLoaded] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     console.log("🚀 PaymentGateway mounted with rideData:", rideData);
-    createPaymentOrder();
+    
+    // Load Razorpay script first
+    loadRazorpayScript();
   }, []);
+
+  const loadRazorpayScript = () => {
+    // Check if already loaded
+    if (window.Razorpay) {
+      console.log("✅ Razorpay already loaded");
+      setScriptLoaded(true);
+      createPaymentOrder();
+      return;
+    }
+
+    // Load script dynamically
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => {
+      console.log("✅ Razorpay script loaded successfully");
+      setScriptLoaded(true);
+      createPaymentOrder();
+    };
+    script.onerror = () => {
+      console.error("❌ Failed to load Razorpay script");
+      setError("Failed to load payment gateway");
+      toast.error("Payment gateway failed to load. Please refresh the page.");
+      onPaymentCancel();
+    };
+    document.body.appendChild(script);
+  };
 
   const createPaymentOrder = async () => {
     try {
@@ -20,8 +51,9 @@ function PaymentGateway({ rideData, onPaymentSuccess, onPaymentCancel }) {
         throw new Error("No authentication token found");
       }
 
+      // ✅ CORRECT ENDPOINT - Update this to match your backend
       const response = await fetch(
-        `${import.meta.env.VITE_BASE_URL}/api/payments/create-order`,
+        `${import.meta.env.VITE_BASE_URL}/api/payments/create-order`, // Make sure this matches your backend route
         {
           method: "POST",
           headers: {
@@ -49,6 +81,7 @@ function PaymentGateway({ rideData, onPaymentSuccess, onPaymentCancel }) {
       initializeRazorpay(data);
     } catch (error) {
       console.error("❌ Payment order creation failed:", error);
+      setError(error.message);
       toast.error(`Failed to initialize payment: ${error.message}`);
       onPaymentCancel();
     }
@@ -57,14 +90,16 @@ function PaymentGateway({ rideData, onPaymentSuccess, onPaymentCancel }) {
   const initializeRazorpay = (orderData) => {
     console.log("🎯 Initializing Razorpay with:", orderData);
 
+    // ✅ ADD THIS CHECK
     if (!window.Razorpay) {
-      toast.error("Payment gateway not loaded. Please refresh the page.");
+      console.error("❌ Razorpay not available");
+      toast.error("Payment gateway not available");
       onPaymentCancel();
       return;
     }
 
     const options = {
-      key: orderData.key,
+      key: orderData.key, // Make sure this is in the response
       amount: orderData.order.amount,
       currency: orderData.order.currency,
       name: "TripNow",
@@ -92,14 +127,20 @@ function PaymentGateway({ rideData, onPaymentSuccess, onPaymentCancel }) {
       },
     };
 
-    const rzp = new window.Razorpay(options);
-    rzp.on("payment.failed", function (response) {
-      console.error("💸 Payment failed:", response.error);
-      toast.error(`Payment failed: ${response.error.description}`);
-      onPaymentCancel();
-    });
+    try {
+      const rzp = new window.Razorpay(options);
+      rzp.on("payment.failed", function (response) {
+        console.error("💸 Payment failed:", response.error);
+        toast.error(`Payment failed: ${response.error.description}`);
+        onPaymentCancel();
+      });
 
-    rzp.open();
+      rzp.open();
+    } catch (error) {
+      console.error("❌ Error opening Razorpay:", error);
+      toast.error("Failed to open payment gateway");
+      onPaymentCancel();
+    }
   };
 
   const verifyPayment = async (response, paymentId) => {
@@ -107,8 +148,10 @@ function PaymentGateway({ rideData, onPaymentSuccess, onPaymentCancel }) {
       console.log("🔍 Verifying payment:", { paymentId, response });
 
       const token = localStorage.getItem("token");
+      
+      // ✅ CORRECT ENDPOINT - Update this to match your backend
       const verifyResponse = await fetch(
-        `${import.meta.env.VITE_BASE_URL}/api/payments/verify`,
+        `${import.meta.env.VITE_BASE_URL}/api/payments/verify`, // Make sure this matches your backend route
         {
           method: "POST",
           headers: {
@@ -140,14 +183,36 @@ function PaymentGateway({ rideData, onPaymentSuccess, onPaymentCancel }) {
     }
   };
 
-  if (isLoading) {
+  if (error) {
     return (
       <motion.div
-        className="fixed inset-0 flex items-center justify-center bg-black/70 z-50"
+        className="fixed inset-0 flex items-center justify-center bg-black/70 z-[9999]"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
-        <div className="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 text-center">
+        <div className="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 text-center relative z-[10000]">
+          <div className="text-red-600 mb-4">⚠️</div>
+          <h3 className="text-lg font-bold mb-2">Payment Error</h3>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={onPaymentCancel}
+            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg"
+          >
+            Close
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <motion.div
+        className="fixed inset-0 flex items-center justify-center bg-black/70 z-[9999]"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
+        <div className="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 text-center relative z-[10000]">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
           <h3 className="text-lg font-bold mb-2">Initializing Payment</h3>
           <p className="text-gray-600">Please wait...</p>
