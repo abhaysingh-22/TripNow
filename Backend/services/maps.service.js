@@ -17,8 +17,6 @@ async function getCoordinates(address) {
 
   const validAddress = address?.trim() || "New York, NY";
 
-  console.log("🌍 Geocoding address:", validAddress);
-
   try {
     const response = await axios.get(
       "https://maps.googleapis.com/maps/api/geocode/json",
@@ -26,42 +24,26 @@ async function getCoordinates(address) {
         params: {
           address: validAddress,
           key: apiKey,
-          region: "in", // Bias results towards India
+          region: "in",
         },
       }
     );
 
-    console.log(
-      "📡 Google Maps geocoding response:",
-      JSON.stringify(response.data, null, 2)
-    );
-
     if (response.data.status !== "OK") {
-      console.error("❌ Geocoding API error:", response.data.status);
       throw new Error(`Geocoding failed: ${response.data.status}`);
     }
 
     if (!response.data.results || response.data.results.length === 0) {
-      console.error("❌ No results found for address:", validAddress);
       throw new Error(`No coordinates found for address: ${validAddress}`);
     }
 
     const location = response.data.results[0].geometry.location;
-    const result = {
+    return {
       latitude: location.lat,
       longitude: location.lng,
     };
-
-    console.log("✅ Geocoding successful:", result);
-    return result;
   } catch (error) {
-    console.error("❌ Geocoding error:", error.message);
-
-    if (error.response) {
-      console.error("Response status:", error.response.status);
-      console.error("Response data:", error.response.data);
-    }
-
+    console.error("Geocoding error:", error.message);
     throw new Error(`Geocoding failed: ${error.message}`);
   }
 }
@@ -84,8 +66,6 @@ async function getDistanceTime(origin, destination) {
       ? `${destination.latitude},${destination.longitude}`
       : destination;
 
-  console.log("🚗 Getting distance/time from:", originStr, "to:", destStr);
-
   try {
     const response = await axios.get(
       "https://maps.googleapis.com/maps/api/distancematrix/json",
@@ -100,11 +80,6 @@ async function getDistanceTime(origin, destination) {
       }
     );
 
-    console.log(
-      "📡 Distance Matrix response:",
-      JSON.stringify(response.data, null, 2)
-    );
-
     if (response.data.status !== "OK") {
       throw new Error(`Distance Matrix API error: ${response.data.status}`);
     }
@@ -117,17 +92,14 @@ async function getDistanceTime(origin, destination) {
     const distanceInKm = element.distance.value / 1000;
     const durationInMinutes = Math.round(element.duration.value / 60);
 
-    const result = {
+    return {
       distance: parseFloat(distanceInKm.toFixed(2)),
       duration: durationInMinutes,
       distanceText: element.distance.text,
       durationText: element.duration.text,
     };
-
-    console.log("✅ Distance/time calculation successful:", result);
-    return result;
   } catch (error) {
-    console.error("❌ Distance calculation error:", error.message);
+    console.error("Distance calculation error:", error.message);
     throw new Error(`Distance calculation failed: ${error.message}`);
   }
 }
@@ -140,8 +112,6 @@ async function getSuggestions(input) {
   if (!apiKey) throw new Error("Google Maps API key not found");
   if (!input?.trim()) throw new Error("Input required");
 
-  console.log("🔍 Getting place suggestions for:", input.trim());
-
   try {
     const response = await axios.get(
       "https://maps.googleapis.com/maps/api/place/textsearch/json",
@@ -149,15 +119,10 @@ async function getSuggestions(input) {
         params: {
           query: input.trim(),
           key: apiKey,
-          region: "in", // Bias results towards India
+          region: "in",
           language: "en",
         },
       }
-    );
-
-    console.log(
-      "📡 Places API response:",
-      JSON.stringify(response.data, null, 2)
     );
 
     if (
@@ -168,7 +133,7 @@ async function getSuggestions(input) {
     }
 
     const results = response.data.results || [];
-    const suggestions = results.slice(0, 5).map((place) => ({
+    return results.slice(0, 5).map((place) => ({
       description: `${place.name}${
         place.formatted_address ? `, ${place.formatted_address}` : ""
       }`,
@@ -178,11 +143,8 @@ async function getSuggestions(input) {
         secondary_text: place.formatted_address || "",
       },
     }));
-
-    console.log("✅ Suggestions found:", suggestions.length);
-    return suggestions;
   } catch (error) {
-    console.error("❌ Suggestions error:", error.message);
+    console.error("Suggestions error:", error.message);
     throw new Error(`Suggestions failed: ${error.message}`);
   }
 }
@@ -194,8 +156,6 @@ async function getPlaceDetails(placeId) {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
   if (!apiKey) throw new Error("Google Maps API key not found");
   if (!placeId) throw new Error("Place ID required");
-
-  console.log("📍 Getting place details for:", placeId);
 
   try {
     const response = await axios.get(
@@ -224,7 +184,7 @@ async function getPlaceDetails(placeId) {
       place_id: place.place_id,
     };
   } catch (error) {
-    console.error("❌ Place details error:", error.message);
+    console.error("Place details error:", error.message);
     throw new Error(`Place details failed: ${error.message}`);
   }
 }
@@ -252,18 +212,14 @@ async function getCaptainsInRadius(latitude, longitude, radius) {
     throw new Error("Latitude, longitude, and radius required");
   }
 
-  console.log(
-    `🎯 Finding captains within ${radius}km of ${latitude}, ${longitude}`
-  );
-
   try {
     const allCaptains = await Captain.find({
       "location.latitude": { $exists: true },
       "location.longitude": { $exists: true },
-      status: "active", // Only find active captains
+      status: "active",
     });
 
-    const nearbyCaptains = allCaptains.filter((captain) => {
+    return allCaptains.filter((captain) => {
       const distance = calculateDistance(
         latitude,
         longitude,
@@ -272,11 +228,8 @@ async function getCaptainsInRadius(latitude, longitude, radius) {
       );
       return distance <= radius;
     });
-
-    console.log(`✅ Found ${nearbyCaptains.length} captains within radius`);
-    return nearbyCaptains;
   } catch (error) {
-    console.error("❌ Captain search error:", error.message);
+    console.error("Captain search error:", error.message);
     throw new Error(`Captain search failed: ${error.message}`);
   }
 }
@@ -295,40 +248,26 @@ function calculateFare(distance, duration, vehicleType) {
   const fare = fares[vehicleType?.toLowerCase()] || fares.car;
   const total = fare.base + distance * fare.perKm + duration * fare.perMin;
 
-  const calculatedFare = Math.round(total * 100) / 100;
-  console.log(
-    `💰 Fare calculated: ₹${calculatedFare} for ${distance}km, ${duration}min, ${vehicleType}`
-  );
-
-  return calculatedFare;
+  return Math.round(total * 100) / 100;
 }
 
 /**
  * Get fare details for a trip
  */
 async function getFareWithDetails(pickup, dropoff, vehicleType) {
-  console.log("💸 Calculating fare for trip:", {
-    pickup,
-    dropoff,
-    vehicleType,
-  });
-
   try {
     const trip = await getDistanceTime(pickup, dropoff);
     const fare = calculateFare(trip.distance, trip.duration, vehicleType);
 
-    const result = {
+    return {
       fare,
       distance: trip.distance,
       duration: trip.duration,
       distanceText: trip.distanceText,
       durationText: trip.durationText,
     };
-
-    console.log("✅ Fare calculation successful:", result);
-    return result;
   } catch (error) {
-    console.error("❌ Fare calculation error:", error.message);
+    console.error("Fare calculation error:", error.message);
     throw new Error(`Fare calculation failed: ${error.message}`);
   }
 }
@@ -350,8 +289,6 @@ async function getDirections(origin, destination) {
     typeof destination === "object"
       ? `${destination.latitude},${destination.longitude}`
       : destination;
-
-  console.log("🗺️ Getting directions from:", originStr, "to:", destStr);
 
   try {
     const response = await axios.get(
@@ -383,7 +320,7 @@ async function getDirections(origin, destination) {
       duration: route.legs[0].duration,
     };
   } catch (error) {
-    console.error("❌ Directions error:", error.message);
+    console.error("Directions error:", error.message);
     throw new Error(`Directions failed: ${error.message}`);
   }
 }
