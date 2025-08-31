@@ -1,7 +1,6 @@
 import { validationResult } from "express-validator";
 import paymentService from "../services/payment.service.js";
 import Ride from "../models/ride.model.js";
-import Payment from "../models/payment.model.js";
 
 const createPaymentOrder = async (req, res) => {
   const errors = validationResult(req);
@@ -32,7 +31,6 @@ const createPaymentOrder = async (req, res) => {
       amount,
       rideId
     );
-
     const payment = await paymentService.createPayment({
       rideId,
       userId,
@@ -54,7 +52,7 @@ const createPaymentOrder = async (req, res) => {
       key: process.env.RAZORPAY_KEY_ID,
     });
   } catch (error) {
-    console.error("Payment order creation error: ", error);
+    console.error("Payment order creation error:", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -76,7 +74,7 @@ const verifyPayment = async (req, res) => {
     );
 
     if (!isValidSignature) {
-      return res.status(400).json({ error: "Invalid Payment signature" });
+      return res.status(400).json({ error: "Invalid payment signature" });
     }
 
     const payment = await paymentService.updatePaymentStatus(paymentId, {
@@ -92,11 +90,11 @@ const verifyPayment = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Payment verifed successfully",
+      message: "Payment verified successfully",
       payment,
     });
   } catch (error) {
-    console.error("Payment verification error: ", error);
+    console.error("Payment verification error:", error);
     res.status(500).json({ error: error.message });
   }
 };
