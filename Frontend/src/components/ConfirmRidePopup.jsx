@@ -29,7 +29,7 @@ const ConfirmRidePopup = ({ ride, onConfirm, onCancel }) => {
     },
   };
 
-  // ✅ Safely merge real data with mock data
+  // Safely merge real data with mock data
   const rideData = {
     ...mockData,
     ...ride,
@@ -55,11 +55,7 @@ const ConfirmRidePopup = ({ ride, onConfirm, onCancel }) => {
     },
   };
 
-  // ✅ Add debug logging
-  console.log("ConfirmRidePopup received ride:", ride);
-  console.log("ConfirmRidePopup final rideData:", rideData);
-
-  // ✅ Safe property access functions
+  // Safe property access functions
   const getUserPhoto = () => {
     return (
       rideData.user?.photo || "https://randomuser.me/api/portraits/lego/1.jpg"
@@ -103,13 +99,6 @@ const ConfirmRidePopup = ({ ride, onConfirm, onCancel }) => {
       const token = localStorage.getItem("token");
       const rideId = rideData._id || rideData.id;
 
-      console.log("🔍 OTP Verification Debug:");
-      console.log("Token exists:", !!token);
-      console.log("Ride ID:", rideId);
-      console.log("OTP entered:", otp);
-      console.log("Ride data:", rideData);
-      console.log("Request payload:", { rideId, otp });
-
       if (!rideId) {
         throw new Error("No ride ID found");
       }
@@ -122,7 +111,6 @@ const ConfirmRidePopup = ({ ride, onConfirm, onCancel }) => {
 
       const response = await fetch(
         `${import.meta.env.VITE_BASE_URL}/api/rides/start`,
-
         {
           method: "POST",
           headers: {
@@ -133,26 +121,13 @@ const ConfirmRidePopup = ({ ride, onConfirm, onCancel }) => {
         }
       );
 
-      console.log("📥 Response status:", response.status);
-      console.log(
-        "📥 Response headers:",
-        Object.fromEntries(response.headers.entries())
-      );
-
       const data = await response.json();
-      console.log("📥 Response data:", data);
 
       if (!response.ok) {
-        const errorMessage =
-          data.error ||
-          data.message ||
-          data.details?.[0]?.msg ||
-          `HTTP ${response.status}: Failed to start ride`;
-        console.error("❌ Backend error details:", data);
+        console.error("Backend error details:", data);
         throw new Error(data.message || "Failed to start ride");
       }
 
-      console.log("Ride started successfully:", data);
       toast.success("Ride started successfully!");
       navigate("/captain-riding", {
         state: {
@@ -170,10 +145,9 @@ const ConfirmRidePopup = ({ ride, onConfirm, onCancel }) => {
         },
       });
     } catch (error) {
-      console.error("❌ OTP verification failed:", error);
-      console.error("❌ Error stack:", error.stack);
+      console.error("OTP verification failed:", error);
 
-      // ✅ Show specific error message to user
+      // Show specific error message to user
       if (error.message.includes("Invalid OTP")) {
         toast.error("Invalid OTP. Please check with passenger.");
       } else if (
@@ -232,16 +206,14 @@ const ConfirmRidePopup = ({ ride, onConfirm, onCancel }) => {
               <div className="w-2 h-2 bg-green-500 absolute top-0 right-0 rounded-full border border-white"></div>
               <div className="h-12 w-12 rounded-full overflow-hidden border-2 border-white">
                 <img
-                  src={getUserPhoto()} // ✅ Use safe function
-                  alt={getUserName()} // ✅ Use safe function
+                  src={getUserPhoto()}
+                  alt={getUserName()}
                   className="h-full w-full object-cover"
                 />
               </div>
             </motion.div>
             <div className="ml-3">
-              <h3 className="font-bold text-white text-lg">
-                {getUserName()} {/* ✅ Use safe function */}
-              </h3>
+              <h3 className="font-bold text-white text-lg">{getUserName()}</h3>
               <div className="flex items-center">
                 <svg
                   className="w-4 h-4 text-white"
@@ -251,7 +223,7 @@ const ConfirmRidePopup = ({ ride, onConfirm, onCancel }) => {
                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                 </svg>
                 <span className="text-white text-sm ml-1">
-                  {getUserRating()} {/* ✅ Use safe function */}
+                  {getUserRating()}
                 </span>
                 <div className="flex items-center ml-2 bg-white bg-opacity-20 px-2 py-0.5 rounded">
                   <svg
@@ -282,7 +254,7 @@ const ConfirmRidePopup = ({ ride, onConfirm, onCancel }) => {
             transition={{ delay: 0.3 }}
           >
             <span className="text-white font-bold">
-              ₹{getAmount().toFixed(2)} {/* ✅ Use safe function */}
+              ₹{getAmount().toFixed(2)}
             </span>
           </motion.div>
         </div>
@@ -313,22 +285,19 @@ const ConfirmRidePopup = ({ ride, onConfirm, onCancel }) => {
           <div className="text-center px-4 py-2 bg-gray-50 rounded-lg flex-1 mx-1">
             <p className="text-gray-500 text-xs">Distance</p>
             <p className="font-bold text-gray-800">
-              {getDistance().toFixed(1)} km{" "}
-              {/* ✅ Always show 1 decimal place */}
+              {getDistance().toFixed(1)} km
             </p>
           </div>
 
           <div className="text-center px-4 py-2 bg-gray-50 rounded-lg flex-1 mx-1">
             <p className="text-gray-500 text-xs">Duration</p>
-            <p className="font-bold text-gray-800">
-              {getDuration()} min {/* ✅ Whole minutes */}
-            </p>
+            <p className="font-bold text-gray-800">{getDuration()} min</p>
           </div>
 
           <div className="text-center px-4 py-2 bg-gray-50 rounded-lg flex-1 mx-1">
             <p className="text-gray-500 text-xs">Earning</p>
             <p className="font-bold text-green-600">
-              ₹{getAmount().toFixed(2)} {/* ✅ Use safe function */}
+              ₹{getAmount().toFixed(2)}
             </p>
           </div>
         </motion.div>
@@ -441,7 +410,7 @@ const ConfirmRidePopup = ({ ride, onConfirm, onCancel }) => {
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Ask the passenger for the 4-digit code shown on their app
+                  Ask the passenger for the 4-digit code shown on their a
                 </p>
               </div>
             </motion.div>
