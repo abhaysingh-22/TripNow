@@ -5,9 +5,6 @@ import { useNavigate } from "react-router-dom";
 function FinishRide({ rideData, onClose, onFinish }) {
   const navigate = useNavigate();
 
-  console.log("FinishRide - Received rideData:", rideData);
-
-  // ✅ Better data extraction with multiple fallback paths
   const safeRideData = {
     user: {
       name:
@@ -41,13 +38,8 @@ function FinishRide({ rideData, onClose, onFinish }) {
     },
   };
 
-  console.log("FinishRide - Processed safeRideData:", safeRideData);
-
-  // Update the handleFinishRide function:
-
   const handleFinishRide = async () => {
     try {
-      // ✅ Send ride completion to backend to update captain stats
       const token = localStorage.getItem("token");
 
       if (token && rideData?._id) {
@@ -66,18 +58,12 @@ function FinishRide({ rideData, onClose, onFinish }) {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({
-              rideId: rideData._id,
-              fare: safeRideData.amount,
-              distance: safeRideData.distance,
-              duration: safeRideData.duration,
-            }),
+            body: JSON.stringify(requestBody),
           }
         );
 
         if (response.ok) {
           const data = await response.json();
-          console.log("✅ Ride completed successfully:", data);
 
           setTimeout(() => {
             window.dispatchEvent(
@@ -92,22 +78,17 @@ function FinishRide({ rideData, onClose, onFinish }) {
           }, 500);
         } else {
           const errorData = await response.text();
-          console.error("❌ Failed to complete ride:", {
+          console.error("Failed to complete ride:", {
             status: response.status,
             error: errorData,
           });
         }
       }
 
-      // Clear active ride data
       localStorage.removeItem("activeRide");
-      console.log("✅ Cleared active ride from localStorage");
-
-      // Navigate back to captain home
       navigate("/captain-home");
     } catch (error) {
-      console.error("❌ Error completing ride:", error);
-      // Still navigate even if API call fails
+      console.error("Error completing ride:", error);
       localStorage.removeItem("activeRide");
       navigate("/captain-home");
     }
@@ -263,7 +244,7 @@ function FinishRide({ rideData, onClose, onFinish }) {
             whileHover={{ scale: 1.02, backgroundColor: "#059669" }}
             whileTap={{ scale: 0.98 }}
           >
-            Finish This Ride
+            Complete Ride
           </motion.button>
 
           <motion.button
