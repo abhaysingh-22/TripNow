@@ -2,8 +2,6 @@ import BlacklistToken from "../models/blacklistToken.model.js";
 import Captain from "../models/captain.model.js";
 import { createCaptain } from "../services/captain.service.js";
 import { validationResult } from "express-validator";
-import Ride from "../models/ride.model.js";
-import jwt from "jsonwebtoken";
 
 const registerCaptain = async (req, res) => {
   const errors = validationResult(req);
@@ -15,12 +13,10 @@ const registerCaptain = async (req, res) => {
     const { fullName, email, password, vehicle } = req.body;
 
     const isCaptainExists = await Captain.findOne({ email });
-
     if (isCaptainExists) {
       return res.status(400).json({ message: "Captain already exists" });
     }
 
-    // Hash the password before saving
     const hashedPassword = await Captain.hashPassword(password);
 
     const captain = await createCaptain({
@@ -35,6 +31,7 @@ const registerCaptain = async (req, res) => {
     });
 
     const token = captain.generateAuthToken();
+
     res.status(201).json({
       message: "Captain registered successfully",
       captain: {
@@ -56,22 +53,19 @@ const registerCaptain = async (req, res) => {
 
 const loginCaptain = async (req, res) => {
   const errors = validationResult(req);
-
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { email, password } = req.body;
-
   try {
-    const captain = await Captain.findOne({ email }).select("+password");
+    const { email, password } = req.body;
 
+    const captain = await Captain.findOne({ email }).select("+password");
     if (!captain) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
     const isMatch = await captain.comparePassword(password);
-
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
@@ -82,7 +76,6 @@ const loginCaptain = async (req, res) => {
     }
 
     res.cookie("token", token);
-
     res.status(200).json({
       message: "Captain logged in successfully",
       token,
@@ -95,10 +88,9 @@ const loginCaptain = async (req, res) => {
 
 const getCaptainProfile = async (req, res) => {
   try {
-    const captain = req.captain;
     res.status(200).json({
       message: "Captain profile fetched successfully",
-      captain,
+      captain: req.captain,
     });
   } catch (error) {
     console.error("Error fetching captain profile:", error);
@@ -116,7 +108,6 @@ const logoutCaptain = async (req, res) => {
     }
 
     await BlacklistToken.create({ token });
-
     res.clearCookie("token");
     res.status(200).json({ message: "Captain logged out successfully" });
   } catch (error) {
@@ -127,12 +118,7 @@ const logoutCaptain = async (req, res) => {
 
 const getCaptainStats = async (req, res) => {
   try {
-    const captainId = req.captain._id;
-
-    console.log(`📊 Fetching career stats for captain: ${captainId}`);
-
-    // Get captain data with career stats only
-    const captain = await Captain.findById(captainId).select(
+    const captain = await Captain.findById(req.captain._id).select(
       "totalRides totalEarnings totalDistance"
     );
 
@@ -140,7 +126,6 @@ const getCaptainStats = async (req, res) => {
       return res.status(404).json({ error: "Captain not found" });
     }
 
-    // ✅ Simplified response with only career stats
     const stats = {
       career: {
         totalRides: captain.totalRides || 0,
@@ -149,14 +134,12 @@ const getCaptainStats = async (req, res) => {
       },
     };
 
-    console.log("✅ Captain career stats fetched:", stats);
-
     res.status(200).json({
       success: true,
-      stats: stats,
+      stats,
     });
   } catch (error) {
-    console.error("❌ Get captain stats error:", error);
+    console.error("Get captain stats error:", error);
     res.status(500).json({ error: "Failed to fetch captain stats" });
   }
 };
