@@ -45,14 +45,16 @@ export const useSuggestions = () => {
         console.log("Token found:", !!token);
 
         if (!token) {
-          console.warn("No token found - proceeding without authentication for testing");
+          console.warn(
+            "No token found - proceeding without authentication for testing"
+          );
           // We'll still make the API call but handle 401 errors gracefully
         }
 
         const requestHeaders = {
           "Content-Type": "application/json",
         };
-        
+
         // Only add Authorization header if token exists
         if (token) {
           requestHeaders.Authorization = `Bearer ${token}`;
