@@ -8,10 +8,10 @@ import {
 } from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
 
-function LocationSearchPanel({ 
-  setPickup, 
-  setDestination, 
-  activeInput, 
+function LocationSearchPanel({
+  setPickup,
+  setDestination,
+  activeInput,
   hasActiveRide,
   suggestions = [],
   isLoadingSuggestions = false,
@@ -19,17 +19,17 @@ function LocationSearchPanel({
   onSuggestionSelect,
   onInputChange,
   pickup = "",
-  destination = ""
+  destination = "",
 }) {
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
 
   // Debug logging
-  console.log('LocationSearchPanel props:', {
+  console.log("LocationSearchPanel props:", {
     suggestions: suggestions?.length || 0,
     isLoadingSuggestions,
     showSuggestions,
-    activeInput
+    activeInput,
   });
 
   const locations = [
@@ -63,7 +63,7 @@ function LocationSearchPanel({
   const handleLocationSelect = (location) => {
     setSelectedLocation(location);
     const fullLocation = location.name + ", " + location.address;
-    
+
     if (activeInput === "destination") {
       setDestination(fullLocation);
     } else {
@@ -76,29 +76,33 @@ function LocationSearchPanel({
     if (!showSuggestions || suggestions.length === 0) return;
 
     switch (e.key) {
-      case 'ArrowDown':
+      case "ArrowDown":
         e.preventDefault();
-        setSelectedSuggestionIndex(prev => 
+        setSelectedSuggestionIndex((prev) =>
           prev < suggestions.length - 1 ? prev + 1 : 0
         );
         break;
-      case 'ArrowUp':
+      case "ArrowUp":
         e.preventDefault();
-        setSelectedSuggestionIndex(prev => 
+        setSelectedSuggestionIndex((prev) =>
           prev > 0 ? prev - 1 : suggestions.length - 1
         );
         break;
-      case 'Enter':
+      case "Enter":
         e.preventDefault();
-        if (selectedSuggestionIndex >= 0 && selectedSuggestionIndex < suggestions.length) {
-          onSuggestionSelect && onSuggestionSelect(suggestions[selectedSuggestionIndex]);
+        if (
+          selectedSuggestionIndex >= 0 &&
+          selectedSuggestionIndex < suggestions.length
+        ) {
+          onSuggestionSelect &&
+            onSuggestionSelect(suggestions[selectedSuggestionIndex]);
         }
         break;
-      case 'Escape':
+      case "Escape":
         e.preventDefault();
         setSelectedSuggestionIndex(-1);
         // Clear suggestions by calling parent
-        onInputChange && onInputChange('', activeInput);
+        onInputChange && onInputChange("", activeInput);
         break;
     }
   };
@@ -113,15 +117,16 @@ function LocationSearchPanel({
         {hasActiveRide ? "CHECK FARES FOR " : "SELECT "}
         {activeInput === "destination" ? "DESTINATION" : "PICKUP LOCATION"}
       </h3>
-      
+
       {hasActiveRide && (
         <div className="mb-4 p-2 bg-blue-50 rounded-lg">
           <p className="text-xs text-blue-600">
-            You can check fares for different locations but cannot book while in an active ride
+            You can check fares for different locations but cannot book while in
+            an active ride
           </p>
         </div>
       )}
-      
+
       <div className="space-y-1 max-h-[300px] overflow-y-auto">
         <div className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">
           Quick Selections
