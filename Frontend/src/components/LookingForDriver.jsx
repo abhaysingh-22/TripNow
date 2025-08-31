@@ -47,13 +47,14 @@ function LookingForDriver({
   };
 
   const handleBackNavigation = () => {
-    // Also cancel when back is pressed
     if (onCancel) {
       onCancel();
     }
   };
 
-  const headerText = driverFound ? "Driver Found!" : `Looking for Driver${dots}`;
+  const headerText = driverFound
+    ? "Driver Found!"
+    : `Looking for Driver${dots}`;
   const subText = driverFound
     ? "Connecting you with your driver..."
     : "This usually takes a few seconds";
@@ -71,18 +72,22 @@ function LookingForDriver({
             whileTap={{ scale: 0.95 }}
             onClick={handleBackNavigation}
             className="p-2 hover:bg-gray-100 rounded-full"
-            disabled={driverFound} // Disable back when driver found
+            disabled={driverFound}
           >
-            <ArrowLeftIcon className={`w-5 h-5 ${driverFound ? "text-gray-400" : ""}`} />
+            <ArrowLeftIcon
+              className={`w-5 h-5 ${driverFound ? "text-gray-400" : ""}`}
+            />
           </motion.button>
           <h3 className="text-xl md:text-2xl font-bold">{headerText}</h3>
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={handleCancelRide}
             className="p-2 hover:bg-gray-100 rounded-full"
-            disabled={driverFound} // Disable cancel when driver found
+            disabled={driverFound}
           >
-            <XMarkIcon className={`w-5 h-5 ${driverFound ? "text-gray-400" : ""}`} />
+            <XMarkIcon
+              className={`w-5 h-5 ${driverFound ? "text-gray-400" : ""}`}
+            />
           </motion.button>
         </div>
       </div>
@@ -135,7 +140,7 @@ function LookingForDriver({
           </h2>
           <p className="text-sm md:text-base text-gray-600">{subText}</p>
 
-          {/* ✅ Show captain info when driver found */}
+          {/* Captain info when driver found */}
           {driverFound && captainInfo && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -150,7 +155,9 @@ function LookingForDriver({
                   className="w-12 h-12 rounded-full object-cover border-2 border-green-300 mr-3"
                 />
                 <div className="text-left">
-                  <p className="font-semibold text-green-800">{captainInfo.name}</p>
+                  <p className="font-semibold text-green-800">
+                    {captainInfo.name}
+                  </p>
                   <div className="flex items-center">
                     <svg
                       className="w-4 h-4 text-yellow-400 mr-1"
@@ -159,7 +166,9 @@ function LookingForDriver({
                     >
                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                     </svg>
-                    <span className="text-sm text-green-700">{captainInfo.rating}</span>
+                    <span className="text-sm text-green-700">
+                      {captainInfo.rating}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -169,21 +178,27 @@ function LookingForDriver({
           {/* Progress Bar */}
           <div className="w-full bg-gray-200 rounded-full h-2 mt-4">
             <motion.div
-              className={`h-2 rounded-full ${driverFound ? "bg-green-500" : "bg-black"}`}
+              className={`h-2 rounded-full ${
+                driverFound ? "bg-green-500" : "bg-black"
+              }`}
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
               transition={{ duration: 0.1 }}
             />
           </div>
 
-          {/* Loading Line Animation - Hide when driver found */}
+          {/* Loading Line Animation */}
           {!driverFound && (
             <div className="mt-6 space-y-2">
               <motion.div
                 className="h-1 bg-gray-300 rounded-full mx-auto"
                 initial={{ width: "20%" }}
                 animate={{ width: ["20%", "80%", "40%", "90%", "20%"] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
               />
               <motion.div
                 className="h-1 bg-gray-400 rounded-full mx-auto"
@@ -224,11 +239,15 @@ function LookingForDriver({
               <div className="flex items-center text-gray-500 mt-1">
                 <ClockIcon className="w-4 h-4 mr-1" />
                 <span className="text-sm">
-                  {driverFound && captainInfo ? "Arriving in 3 min" : selectedVehicle.time}
+                  {driverFound && captainInfo
+                    ? "Arriving in 3 min"
+                    : selectedVehicle.time}
                 </span>
               </div>
             </div>
-            <span className="text-2xl font-bold">{fare !== undefined ? `₹${fare}` : "—"}</span>
+            <span className="text-2xl font-bold">
+              {fare !== undefined ? `₹${fare}` : "—"}
+            </span>
           </div>
         </div>
 
@@ -289,19 +308,27 @@ function LookingForDriver({
         >
           {driverFound ? (
             <>
-              <p className="text-sm text-green-600">✅ Driver assigned successfully</p>
-              <p className="text-sm text-green-600">🚗 Preparing your ride details...</p>
+              <p className="text-sm text-green-600">
+                Driver assigned successfully
+              </p>
+              <p className="text-sm text-green-600">
+                Preparing your ride details...
+              </p>
             </>
           ) : (
             <>
-              <p className="text-sm text-gray-500">🔍 Searching for nearby drivers</p>
-              <p className="text-sm text-gray-500">📱 We'll notify you when a driver accepts</p>
+              <p className="text-sm text-gray-500">
+                Searching for nearby drivers
+              </p>
+              <p className="text-sm text-gray-500">
+                We'll notify you when a driver accepts
+              </p>
             </>
           )}
         </motion.div>
       </div>
 
-      {/* Cancel Button - Hide when driver found */}
+      {/* Cancel Button */}
       {!driverFound && (
         <div className="fixed bottom-0 left-0 right-0 p-4 md:p-6 bg-white border-t">
           <motion.button
