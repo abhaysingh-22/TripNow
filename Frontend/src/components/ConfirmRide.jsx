@@ -6,7 +6,7 @@ import {
   CurrencyRupeeIcon,
   ClockIcon,
 } from "@heroicons/react/24/solid";
-import toast from "react-hot-toast"; // <-- add import
+import toast from "react-hot-toast";
 
 function ConfirmRide({
   selectedVehicle,
@@ -20,12 +20,6 @@ function ConfirmRide({
 }) {
   const [selectedPayment, setSelectedPayment] = useState(null);
 
-  console.log("=== CONFIRMRIDE DEBUG ===");
-  console.log("fare prop:", fare);
-  console.log("rideResult prop:", rideResult);
-  console.log("selectedVehicle:", selectedVehicle);
-  console.log("========================");
-
   // Use rideResult values first, then props/fallbacks
   const displayFare =
     (rideResult?.amount ?? fare?.fare) !== undefined
@@ -34,12 +28,9 @@ function ConfirmRide({
 
   const vehicleName =
     selectedVehicle?.name || selectedVehicle?.type || "Vehicle";
-
   const vehicleImage = selectedVehicle?.image || "";
-
   const pickupAddress = rideResult?.pickup?.address || pickup || "Pickup";
   const pickupTime = rideResult?.pickup?.time || "Now";
-
   const destinationAddress =
     rideResult?.destination?.address || destination || "Destination";
   const destinationTime = rideResult?.destination?.time || "—";
@@ -52,24 +43,16 @@ function ConfirmRide({
   const formattedDistance = displayDistance
     ? Number(displayDistance).toFixed(1)
     : null;
-
   const formattedDuration = displayDuration
     ? Math.round(Number(displayDuration))
     : null;
-
-  console.log("Display values:", {
-    displayFare,
-    displayDistance,
-    displayDuration,
-    originalDuration: displayDuration,
-  });
 
   const handleConfirm = () => {
     if (!selectedPayment) {
       toast.error("Please select a payment method");
       return;
     }
-    // call onConfirm with selected payment (Home will handle API)
+
     const rideData = {
       pickup: pickup,
       dropoff: destination,
@@ -77,7 +60,6 @@ function ConfirmRide({
       paymentMethod: selectedPayment,
     };
 
-    console.log("🚗 ConfirmRide: Sending ride data:", rideData);
     onConfirm(rideData);
   };
 
