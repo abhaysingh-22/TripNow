@@ -1,9 +1,6 @@
-// CaptainDetails.jsx - Captain profile and statistics component
-// This component handles captain's online/offline status with localStorage persistence
-// Features: Responsive design, smooth animations, state management
 import React, { useState, useEffect, useContext } from "react";
 import { motion } from "framer-motion";
-import { CaptainContext } from "../context/CaptainContext.jsx"; // ✅ Add import
+import { CaptainContext } from "../context/CaptainContext.jsx";
 
 function CaptainDetails({
   isOnline: propIsOnline,
@@ -11,14 +8,11 @@ function CaptainDetails({
 }) {
   const { captain } = useContext(CaptainContext);
 
-  // Local state with localStorage persistence for offline status
-  // This ensures the captain's status survives page refresh
   const [localIsOnline, setLocalIsOnline] = useState(() => {
     const saved = localStorage.getItem("captainOnlineStatus");
     return saved ? JSON.parse(saved) : true;
   });
 
-  // Use prop state if provided (from parent), otherwise use local state
   const isOnline = propIsOnline !== undefined ? propIsOnline : localIsOnline;
   const setIsOnline =
     propSetIsOnline ||
@@ -27,10 +21,8 @@ function CaptainDetails({
       localStorage.setItem("captainOnlineStatus", JSON.stringify(newStatus));
     });
 
-  // Toggle captain's online/offline status
   const toggleOnlineStatus = () => setIsOnline(!isOnline);
 
-  // Animation variants for smooth, consistent animations
   const animations = {
     container: {
       hidden: { opacity: 0 },
@@ -49,14 +41,12 @@ function CaptainDetails({
     },
   };
 
-  // Stats configuration for cleaner, maintainable code
   const [captainStats, setCaptainStats] = useState({
     totalEarnings: 0,
     totalDistance: 0,
     totalRides: 0,
   });
 
-  // ✅ Fetch real captain statistics (simplified)
   useEffect(() => {
     const fetchCaptainStats = async () => {
       try {
@@ -78,8 +68,6 @@ function CaptainDetails({
             totalRides: data.stats.career.totalRides || 0,
           });
         }
-
-        console.log("✅ Career stats updated successfully");
       } catch (error) {
         console.error("Error fetching captain stats:", error);
       }
@@ -89,16 +77,12 @@ function CaptainDetails({
       fetchCaptainStats();
     }
 
-    const handleRideCompleted = (event) => {
-      console.log("🔄 Ride completed event detected, refreshing stats...");
-      console.log("Event details:", event.detail);
-      console.log("Earnings from event:", event.detail.earnings);
+    const handleRideCompleted = () => {
       setTimeout(() => {
         fetchCaptainStats();
       }, 2000);
     };
 
-    // Listen for custom event when ride is completed
     window.addEventListener("rideCompleted", handleRideCompleted);
 
     return () => {
@@ -106,7 +90,6 @@ function CaptainDetails({
     };
   }, [captain]);
 
-  // ✅ Simplified statsConfig with only career stats
   const statsConfig = React.useMemo(
     () => [
       {
@@ -145,7 +128,6 @@ function CaptainDetails({
     [captainStats, isOnline]
   );
 
-  // ✅ Add dollar icon to the existing icon types
   const IconComponent = ({ type, className }) => {
     const icons = {
       dollar: (
@@ -209,7 +191,6 @@ function CaptainDetails({
       animate="show"
       className="p-3 sm:p-4 lg:p-6 pb-4 sm:pb-6 bg-white"
     >
-      {/* Captain Profile Section */}
       <motion.div
         variants={animations.item}
         className="flex items-center justify-between mb-4 sm:mb-5"
@@ -226,7 +207,6 @@ function CaptainDetails({
                 isOnline ? "border-yellow-400" : "border-red-400"
               }`}
             />
-            {/* Online status indicator */}
             <div
               className={`absolute -bottom-1 -right-1 p-1 rounded-full border-2 border-white ${
                 isOnline ? "bg-green-500" : "bg-red-500"
@@ -244,19 +224,16 @@ function CaptainDetails({
 
           <div className="ml-3">
             <h2 className="font-bold text-gray-800 text-sm sm:text-base">
-              {/* ✅ FIX: Access fullName structure properly */}
               {captain?.fullName
                 ? `${captain.fullName.firstName} ${
                     captain.fullName.lastName || ""
                   }`.trim()
                 : "Captain Jhonny"}
             </h2>
-            {/* ✅ Show email if available */}
             {captain?.email && (
               <p className="text-xs text-gray-500">{captain.email}</p>
             )}
             <div className="flex items-center">
-              {/* Star rating display */}
               {[...Array(5)].map((_, i) => (
                 <svg
                   key={i}
@@ -281,7 +258,6 @@ function CaptainDetails({
           </div>
         </div>
 
-        {/* Animated status indicator */}
         <motion.div
           className={`rounded-full w-3 h-3 ${
             isOnline ? "bg-green-500" : "bg-red-500"
@@ -297,7 +273,6 @@ function CaptainDetails({
         />
       </motion.div>
 
-      {/* Statistics Grid - Responsive 2x2 layout */}
       <motion.div
         variants={animations.container}
         initial="hidden"
@@ -310,7 +285,6 @@ function CaptainDetails({
             variants={animations.item}
             className="bg-white rounded-lg p-2 sm:p-3 shadow-sm border border-gray-100"
           >
-            {/* Icon container with background color */}
             <div
               className={`${stat.bgColor} w-6 h-6 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center mb-1 sm:mb-2`}
             >
@@ -320,7 +294,6 @@ function CaptainDetails({
               />
             </div>
 
-            {/* Stat title and value */}
             <p className="text-xs text-gray-500 font-medium">{stat.title}</p>
             <p
               className={`text-sm sm:text-base font-bold ${
@@ -333,7 +306,6 @@ function CaptainDetails({
         ))}
       </motion.div>
 
-      {/* Action Button - Toggle Online/Offline Status */}
       <motion.button
         variants={animations.item}
         className={`w-full py-3 rounded-lg font-medium shadow-md transition-colors duration-300 ${
