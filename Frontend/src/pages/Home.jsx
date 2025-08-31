@@ -601,55 +601,42 @@ function Home() {
         onMenuClick={() => setIsSidePanelOpen(true)}
         onGoBackToRide={handleGoBackToRide}
       />
-
-      {/* OTP Display
-      <AnimatePresence>
-        {showOTP && userOTP && (
-          <OTPDisplay
-            otp={userOTP}
-            onClose={() => {
-              setShowOTP(false);
-              setUserOTP(null);
-              console.log("🔒 OTP closed");
-            }}
-          />
-        )}
-      </AnimatePresence> */}
-
       {/* Live Tracking Map */}
-      <div className="absolute inset-0 z-0">
-        <LiveTracking
-          pickup={
-            currentRide?.pickup
-              ? {
-                  lat: currentRide.pickup.latitude || 0,
-                  lng: currentRide.pickup.longitude || 0,
-                }
-              : null
-          }
-          destination={
-            currentRide?.destination
-              ? {
-                  lat: currentRide.destination.latitude || 0,
-                  lng: currentRide.destination.longitude || 0,
-                }
-              : null
-          }
-          captainLocation={captainLocation}
-          rideStatus={
-            showRiding
-              ? "in-progress"
-              : showWaitingForDriver
-              ? "accepted"
-              : showLookingForDriver
-              ? "waiting"
-              : "default"
-          }
-          estimatedArrival={showWaitingForDriver ? "5 min" : undefined}
-          onLocationUpdate={handleUserLocationUpdate}
-        />
-      </div>
-
+      {!showPayment && (
+        <div className="absolute inset-0 z-0">
+          <LiveTracking
+            pickup={
+              currentRide?.pickup
+                ? {
+                    lat: currentRide.pickup.latitude || 0,
+                    lng: currentRide.pickup.longitude || 0,
+                  }
+                : null
+            }
+            destination={
+              currentRide?.destination
+                ? {
+                    lat: currentRide.destination.latitude || 0,
+                    lng: currentRide.destination.longitude || 0,
+                  }
+                : null
+            }
+            captainLocation={captainLocation}
+            rideStatus={
+              showRiding
+                ? "in-progress"
+                : showWaitingForDriver
+                ? "accepted"
+                : showLookingForDriver
+                ? "waiting"
+                : "default"
+            }
+            estimatedArrival={showWaitingForDriver ? "5 min" : undefined}
+            onLocationUpdate={handleUserLocationUpdate}
+          />
+        </div>
+      )}
+      {showPayment && <div className="absolute inset-0 z-0 bg-gray-100"></div>}
       {/* Backdrop */}
       <AnimatePresence>
         {isSidePanelOpen && (
@@ -662,7 +649,6 @@ function Home() {
           />
         )}
       </AnimatePresence>
-
       {/* Ride Status Components */}
       <AnimatePresence mode="wait">
         {showLookingForDriver && (
@@ -709,7 +695,6 @@ function Home() {
           </motion.div>
         )}
       </AnimatePresence>
-
       {/* Side/Bottom Panel */}
       <AnimatePresence mode="wait">
         {isSidePanelOpen && (
@@ -843,10 +828,9 @@ function Home() {
           </motion.div>
         )}
       </AnimatePresence>
-
       {/* Payment Gateway */}
       {showPayment && pendingRideData && (
-        <div>
+        <div className="fixed inset-0 z-[9999]">
           {console.log("🎨 RENDERING PAYMENT GATEWAY")}
           <PaymentGateway
             rideData={pendingRideData}
@@ -855,7 +839,6 @@ function Home() {
           />
         </div>
       )}
-
       <Toaster position="top-center" />
     </div>
   );
