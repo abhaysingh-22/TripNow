@@ -13,15 +13,16 @@ function Start() {
   }, []);
 
   return (
-    <div className="fixed inset-0 h-screen w-screen overflow-hidden bg-black animate-fadeIn">
+    <div className="fixed inset-0 h-screen w-screen overflow-auto bg-black animate-fadeIn">
       <div
-        className="absolute inset-0 transition-transform duration-300 ease-out"
+        className="fixed inset-0 transition-transform duration-300 ease-out"
         style={{
           backgroundImage: `linear-gradient(to bottom, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)), url(${HomeCar})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
           transform: `translateY(${scrollY}px)`,
+          zIndex: 0,
         }}
       />
 
@@ -32,7 +33,7 @@ function Start() {
             src={TripNow}
             alt="Logo"
           />
-          <div className="space-x-2 sm:space-x-4">
+          <div className="flex space-x-2 sm:space-x-4">
             <Link
               to="/captain-login"
               className="inline-flex items-center px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm md:text-base font-medium
@@ -82,7 +83,7 @@ function Start() {
           </div>
         </header>
 
-        <main className="flex-1 flex items-center justify-center px-4 -mt-8 sm:-mt-12 md:-mt-16">
+        <main className="flex-1 flex items-center justify-center px-4">
           <div className="text-center text-white space-y-4 sm:space-y-6 animate-fadeIn">
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">
               Your Ride, Your Way
@@ -93,7 +94,7 @@ function Start() {
           </div>
         </main>
 
-        <div className="w-full animate-slideUp">
+        <div className="w-full animate-slideUp pb-safe">
           <div
             className="bg-gradient-to-br from-black/40 via-gray-900/60 to-black/40 
             backdrop-blur-xl w-full sm:rounded-t-3xl shadow-2xl 
@@ -116,7 +117,8 @@ function Start() {
                 py-3 sm:py-4 rounded-xl text-base sm:text-lg font-semibold 
                 hover:from-gray-100 hover:via-white hover:to-gray-100 
                 active:scale-[0.98] transition-all duration-300 
-                shadow-[0_0_15px_rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+                shadow-[0_0_15px_rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(255,255,255,0.2)]
+                mb-4"
               >
                 <span className="flex items-center gap-2 sm:gap-3 relative z-10">
                   Ride with us
@@ -142,7 +144,8 @@ function Start() {
                 bg-transparent text-white py-3 sm:py-4 rounded-xl text-base sm:text-lg font-semibold 
                 border-2 border-white/20 hover:border-white/40
                 hover:bg-white/5 active:scale-[0.98] transition-all duration-300
-                shadow-[0_0_15px_rgba(255,255,255,0.05)] hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+                shadow-[0_0_15px_rgba(255,255,255,0.05)] hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]
+                focus:outline-none focus:ring-2 focus:ring-white/30"
               >
                 <span className="flex items-center gap-2 sm:gap-3">
                   Become a driver
