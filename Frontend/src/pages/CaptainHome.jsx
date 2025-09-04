@@ -53,12 +53,41 @@ const CaptainHome = () => {
 
   useEffect(() => {
     if (captain && sendMessage) {
+      // Join captain room
       sendMessage("join", {
         userId: captain._id,
-        role: "captain",
+        userType: "captain",
       });
+
+      // Add timeout for join confirmation
+      const joinTimeout = setTimeout(() => {
+        console.warn("⚠️ Socket join timeout - connection may have failed");
+        toast.error("Connection issue detected. Please refresh the page.");
+      }, 5000);
+
+      // Listen for join confirmation
+      const cleanup = onMessage("joined", (data) => {
+        clearTimeout(joinTimeout);
+        if (data.success && data.userType === "captain") {
+          console.log("✅ Captain successfully joined socket room");
+          toast.success("Connected successfully!");
+        }
+      });
+
+      // Listen for join errors
+      const errorCleanup = onMessage("error", (error) => {
+        clearTimeout(joinTimeout);
+        console.error("❌ Socket join error:", error);
+        toast.error(`Connection failed: ${error.message}`);
+      });
+
+      return () => {
+        clearTimeout(joinTimeout);
+        cleanup();
+        errorCleanup();
+      };
     }
-  }, [captain, sendMessage]);
+  }, [captain, sendMessage, onMessage]);
 
   useEffect(() => {
     const cleanupJoined = onMessage("joined", (data) => {
@@ -137,16 +166,18 @@ const CaptainHome = () => {
   const toggleDetailsPanel = () => setDetailsExpanded(!detailsExpanded);
 
   const handleAcceptRide = async (rideId) => {
-    if (rideData?.isMockData) {
-      toast.success("Mock ride accepted! (No real API call)");
-      setShowRideRequest(false);
-      setShowConfirmRide(true);
+    console.log("🚗 Attempting to accept ride:", rideId);
+
+    // Validate inputs
+    if (!rideId || typeof rideId !== "string") {
+      console.error("❌ Invalid ride ID:", rideId);
+      toast.error("Invalid ride information");
       return;
     }
 
-    if (!rideId || typeof rideId !== "string" || rideId.length !== 24) {
-      console.error("Invalid ride ID format:", rideId);
-      toast.error("Invalid ride ID format");
+    if (!captain?._id) {
+      console.error("❌ No captain data found");
+      toast.error("Captain authentication failed. Please login again.");
       return;
     }
 
@@ -154,10 +185,12 @@ const CaptainHome = () => {
       const token = localStorage.getItem("token");
 
       if (!token) {
-        console.error("No authentication token found");
+        console.error("❌ No authentication token found");
         toast.error("Authentication required. Please login again.");
         return;
       }
+
+      console.log("📡 Sending accept ride request...");
 
       const res = await fetch(
         `${import.meta.env.VITE_BASE_URL}/api/rides/accept`,
@@ -172,65 +205,59 @@ const CaptainHome = () => {
       );
 
       const data = await res.json();
+      console.log("📨 Accept ride response:", { status: res.status, data });
 
       if (!res.ok) {
-        throw new Error(data.error || "Failed to accept ride");
+        console.error("❌ Accept ride failed:", data);
+
+        // Handle specific error cases
+        if (res.status === 401) {
+          toast.error("Session expired. Please login again.");
+          // Redirect to login
+          localStorage.removeItem("token");
+          window.location.href = "/captain-login";
+          return;
+        } else if (res.status === 404) {
+          toast.error("Ride not found or already taken");
+        } else if (res.status === 400) {
+          toast.error(data.error || "Ride no longer available");
+        } else {
+          toast.error(data.error || "Failed to accept ride");
+        }
+
+        // Hide the ride request on error
+        setShowRideRequest(false);
+        return;
       }
 
+      console.log("✅ Ride accepted successfully");
+      toast.success("Ride accepted successfully!");
+
+      // Store ride data for navigation
       const completeRideData = {
         ...rideData,
         _id: rideId,
         status: "accepted",
         acceptedAt: new Date().toISOString(),
-        captain: {
-          _id: captain._id,
-          name: captain.fullName
-            ? `${captain.fullName.firstName} ${
-                captain.fullName.lastName || ""
-              }`.trim()
-            : captain.email,
-          photo:
-            captain.photo || "https://randomuser.me/api/portraits/men/34.jpg",
-          rating: captain.rating || 4.8,
-          vehicle: captain.vehicle,
-        },
+        captain: captain,
       };
 
       localStorage.setItem("activeRide", JSON.stringify(completeRideData));
 
-      if (sendMessage && rideData) {
-        sendMessage("ride-accepted-by-captain", {
-          rideId: rideId,
-          captain: {
-            _id: captain._id,
-            name: captain.fullName
-              ? `${captain.fullName.firstName} ${
-                  captain.fullName.lastName || ""
-                }`.trim()
-              : captain.email,
-            photo:
-              captain.photo || "https://randomuser.me/api/portraits/men/34.jpg",
-            rating: captain.rating || 4.8,
-            totalRides: captain.totalRides || 1000,
-            vehicle: {
-              model: captain.vehicle?.model || "Swift",
-              color: captain.vehicle?.color || "White",
-              numberPlate: captain.vehicle?.numberPlate || "MH 12 AB 1234",
-              type:
-                captain.vehicle?.typeofVehicle ||
-                rideData?.vehicleType ||
-                "Car",
-            },
-          },
-          estimatedArrival: "3 min",
-          message: "Driver found! Your ride has been accepted.",
-        });
-      }
+      // Update UI state
       setShowRideRequest(false);
       setShowConfirmRide(true);
     } catch (error) {
-      console.error("Accept ride error:", error);
-      toast.error(error.message || "Failed to accept ride");
+      console.error("❌ Network/Parse error:", error);
+
+      if (error.name === "TypeError" && error.message.includes("fetch")) {
+        toast.error("Network connection failed. Please check your internet.");
+      } else {
+        toast.error("An unexpected error occurred. Please try again.");
+      }
+
+      // Hide the ride request on error
+      setShowRideRequest(false);
     }
   };
 
