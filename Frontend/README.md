@@ -1,4 +1,4 @@
-# TripNow Frontend
+# TripNow Frontend 
 
 ## Overview
 TripNow Frontend is the user interface for the TripNow ride-hailing application, built with React and modern web technologies. It provides an intuitive, responsive experience for users and captains to manage rides, track locations in real-time, and handle payments seamlessly.
